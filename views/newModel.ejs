@@ -1,6 +1,6 @@
 <%- include ("partials/header.ejs") %>
 <div class="ui main text container">
-    <div class="ui huge header">ML Models</div>
+    <div class="ui huge header">Create New Model</div>
     <form class="ui form" action="/models" method="POST">
         <div class="field">
             <label>Name</label>
@@ -8,11 +8,13 @@
         </div>
         <div class="field">
             <label>Algorithm</label>
-            <select class="ui dropdown">
-                <option value="0">KNN</option>
-                <option value="1">Linear Regression</option>
+            <select class="ui dropdown" name="model[algorithm]">
+                <%algorithms.forEach(function(algorithm){%>
+                <option value=<%=algorithm._id%>><%=algorithm.name%></option>
+                    <%});%>
+                <!-- <option value="1">Linear Regression</option>
                 <option value="2">Logistic Regression</option>
-                <option value="3">Decision Tree</option>
+                <option value="3">Decision Tree</option> -->
             </select>
         </div>
         <div class="field">
@@ -24,7 +26,7 @@
             <textarea name="model[description]" placeholder="description"></textarea>
         </div>
 
-        <input class="ui violet basic button" type="submit">
+        <input class="ui violet basic button" type="submit" value="Create">
     </form>
 
 <%- include ("partials/footer.ejs") %>

@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const Model = require("./models/model.js");
 const modelRoutes = require('./routes/models');
+const algorithmRoutes = require('./routes/algorithms');
 require('dotenv').config();
 
 app.set("view engine", "ejs");
@@ -31,6 +32,8 @@ app.get("/", function (req, res) {
 
 app.use(modelRoutes);
 app.use("/models", modelRoutes);
+app.use(algorithmRoutes);
+app.use("/algorithms", algorithmRoutes);
 
 app.listen(process.env.PORT || 3001, function () {
     console.log("ML Predictor Server Started!")

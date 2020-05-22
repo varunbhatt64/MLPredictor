@@ -1,8 +1,8 @@
 const express = require('express');
 const Model = require('../models/model');
+const Algorithm = require("../models/algorithm.js");
 
 let router = express.Router();
-
 
 // Index - GET
 router.get("/", function (req, res) {
@@ -10,37 +10,50 @@ router.get("/", function (req, res) {
         if (err)
             console.log(err)
         else
-            res.render("model", { models: models })
+            res.render("models", { models: models })
     });
 });
 
 
 //New model- GET
 router.get("/new", function (req, res) {
-    res.render("newModel");
-
+    Algorithm.find({}, function (err, algorithms) {
+        if (err)
+            console.log(err)
+        else
+            res.render("newModel", { algorithms: algorithms })
+    });
 });
 
 //Custom model- GET
 router.get("/custom", function (req, res) {
-    res.render("model");
-
+    Model.find({isCustom: true}, function (err, models) {
+        if (err)
+            console.log(err)
+        else
+            res.render("models", { models: models })
+    });
 });
 
 //Custom model- GET
 router.get("/trained", function (req, res) {
-    res.render("model");
+    Model.find({isTrained: true}, function (err, models) {
+        if (err)
+            console.log(err)
+        else
+            res.render("models", { models: models })
+    });
 });
 
 //Custom model- GET
 router.get("/id", function (req, res) {
-    res.render("model", {id: req.params.id});
+    res.render("models", {id: req.params.id});
 });
 
 //Create model - Post
 router.post("/", function (req, res) {
     // create model
-    Category.create(req.body.model, function (err, newModel) {
+    Model.create(req.body.model, function (err, newModel) {
         if (err) {
             console.log(err);
             res.render("newModel");
@@ -48,7 +61,6 @@ router.post("/", function (req, res) {
         else {
             //redirect to the index
             res.redirect("/models");
-
         }
     });
 });

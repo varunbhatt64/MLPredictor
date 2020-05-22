@@ -1,0 +1,26 @@
+<%- include ("partials/header.ejs") %>
+<div class="ui main text container">
+    <div class="ui huge header">Models</div>
+    <div class="ui top attached segment">
+        <div class="ui divided items">
+            <% models.forEach(function(model){%>
+            <div class="item">
+                <div class="image">
+                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn%3AANd9GcQBsSN7QHEykLjI0rE6Ld5Cojo-d5xvKRdBoVgbfbxgBDCk3hIn&usqp=CAU"
+                        alt="ML model">
+                </div>
+                <div class="content">
+                    <a class="header" href="/models/<%=model._id%>"><%= model.name %></a>
+                    <div class="meta">
+                        <span><%= model.algorithm %></span>
+                    </div>
+                    <div class="description">
+                        <p><%= model.description.toString(0, 10)%></p>
+                    </div>
+                </div>
+            </div>
+            <%});%>
+        </div>        
+    </div>
+    <a class="ui violet basic button" href="/models/new">Create New</a>
+    <%- include ("partials/footer.ejs") %>

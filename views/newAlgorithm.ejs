@@ -1,0 +1,17 @@
+<%- include ("partials/header.ejs") %>
+<div class="ui main text container">
+    <div class="ui huge header">Add New Algorithm</div>
+    <form class="ui form" action="/algorithms" method="POST">
+        <div class="field">
+            <label>Name</label>
+            <input type="text" name="algorithm[name]" placeholder="name">
+        </div>        
+        <div class="field">
+            <label>Desription</label>
+            <textarea name="algorithm[description]" placeholder="description"></textarea>
+        </div>
+
+        <input class="ui violet basic button" type="submit" value="Add">
+    </form>
+
+<%- include ("partials/footer.ejs") %>
