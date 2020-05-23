@@ -33,6 +33,21 @@ app.get("/", function (req, res) {
     res.render("index");
 });
 
+//Demo 1
+app.get("/demo1", function (req, res) {
+    res.render("demo1");
+});
+
+//Demo 2
+app.get("/demo2", function (req, res) {
+    res.render("demo2");
+});
+
+//Demo 3
+app.get("/demo3", function (req, res) {
+    res.render("demo3");
+});
+
 app.use(modelRoutes);
 app.use("/models", modelRoutes);
 app.use(algorithmRoutes);
