@@ -7,9 +7,9 @@ let router = express.Router();
 router.get("/", function (req, res) {
     Algorithm.find({}, function (err, algorithms) {
         if (err)
-            console.log(err)
+            console.log(err);
         else
-            res.render("algorithms", { algorithms: algorithms })
+            res.render("algorithms", { algorithms: algorithms });
     });
 });
 

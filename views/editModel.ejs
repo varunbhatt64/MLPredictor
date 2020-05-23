@@ -1,0 +1,30 @@
+<%- include ("partials/header.ejs") %>
+<div class="ui main text container">
+    <div class="ui huge header">Edit Model - <%=data.model.name%></div>
+    <form class="ui form" action="/models/<%=data.model._id%>?_method=PUT" method="POST">
+        <div class="field">
+            <label>Name</label>
+            <input type="text" name="model[name]" placeholder="name" value="<%=data.model.name%>">
+        </div>
+        <div class="field">
+            <label>Algorithm</label>
+            <select class="ui dropdown" name="model[algorithm]">
+                <%data.algorithms.forEach(function(algorithm){%>
+                <% let selected = ( algorithm.name === data.model.algorithm.name ) ? "selected" : "";%>
+                <option value=<%=algorithm._id%> <%=selected%> > <%=algorithm.name%></option>
+                <%});%>
+            </select>
+        </div>
+        <div class="field">
+            <label>Change Input Data</label>
+            <input type="file" name="model[inputPath]" accept=".csv" value=<%=data.model.inputPath%>>
+        </div>
+        <div class="field">
+            <label>Desription</label>
+            <textarea name="model[description]" placeholder="description"><%=data.model.description%></textarea>
+        </div>
+
+        <input class="ui violet basic button" type="submit" value="Update">
+    </form>
+</div>
+<%- include ("partials/footer.ejs") %>

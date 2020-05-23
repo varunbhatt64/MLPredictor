@@ -9,3 +9,16 @@ i.icon{
 #delete{
     display: inline;
 }
+
+.footer
+{
+  background-color: #101113; 
+  line-height: 100px;
+  text-align:center;
+  clear:both;
+  position: relative;;
+  width :100%;
+  bottom :0;
+  font-family :'lato';
+  margin-top:10em; 
+}

@@ -6,48 +6,47 @@ let router = express.Router();
 
 // Index - GET
 router.get("/", function (req, res) {
-    Model.find({}, function (err, models) {
+    Model.find({}).populate('algorithm').exec(function (err, models) {
         if (err)
-            console.log(err)
+            console.log(err);
         else
-            res.render("models", { models: models })
+            res.render("models", { models: models });
     });
 });
-
 
 //New model- GET
 router.get("/new", function (req, res) {
     Algorithm.find({}, function (err, algorithms) {
         if (err)
-            console.log(err)
+            console.log(err);
         else
-            res.render("newModel", { algorithms: algorithms })
+            res.render("newModel", { algorithms: algorithms });
     });
 });
 
 //Custom model- GET
 router.get("/custom", function (req, res) {
-    Model.find({isCustom: true}, function (err, models) {
+    Model.find({ isCustom: true }, function (err, models) {
         if (err)
-            console.log(err)
+            console.log(err);
         else
-            res.render("models", { models: models })
+            res.render("models", { models: models });
     });
 });
 
 //Custom model- GET
 router.get("/trained", function (req, res) {
-    Model.find({isTrained: true}, function (err, models) {
+    Model.find({ isTrained: true }, function (err, models) {
         if (err)
-            console.log(err)
+            console.log(err);
         else
-            res.render("models", { models: models })
+            res.render("models", { models: models });
     });
 });
 
 //Custom model- GET
 router.get("/id", function (req, res) {
-    res.render("models", {id: req.params.id});
+    res.render("models", { id: req.params.id });
 });
 
 //Create model - Post
@@ -67,14 +66,22 @@ router.post("/", function (req, res) {
 
 //EDIT  Route - GET
 router.get("/:id/edit", function (req, res) {
-    Model.findById(req.params.id, function (err, foundModel) {
+    Model.findById(req.params.id).populate('algorithm').exec(function (err, foundModel) {
         if (err)
             res.redirect("/models");
-        else
-            res.render("editModel", { model: foundModel });
+        else {
+            Algorithm.find({}, function (err, algorithms) {
+                if (err)
+                    console.log(err);
+                else
+                {
+                    const data = { algorithms: algorithms, model: foundModel };
+                    res.render("editModel", {data : data});
+                }
+            });
+        }
     });
 });
-
 
 //UPDATE Route-PUT
 router.put("/:id", function (req, res) {

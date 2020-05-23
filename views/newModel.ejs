@@ -11,15 +11,12 @@
             <select class="ui dropdown" name="model[algorithm]">
                 <%algorithms.forEach(function(algorithm){%>
                 <option value=<%=algorithm._id%>><%=algorithm.name%></option>
-                    <%});%>
-                <!-- <option value="1">Linear Regression</option>
-                <option value="2">Logistic Regression</option>
-                <option value="3">Decision Tree</option> -->
+                <%});%>
             </select>
         </div>
         <div class="field">
             <label>Input Data</label>
-            <input type="file" name="model[input]">
+            <input type="file" accept=".csv" name="model[inputPath]">
         </div>
         <div class="field">
             <label>Desription</label>
@@ -28,5 +25,5 @@
 
         <input class="ui violet basic button" type="submit" value="Create">
     </form>
-
+</div>
 <%- include ("partials/footer.ejs") %>
