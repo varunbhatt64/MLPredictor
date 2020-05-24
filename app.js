@@ -33,6 +33,11 @@ app.get("/", function (req, res) {
     res.render("index");
 });
 
+app.use(algorithmRoutes);
+app.use("/algorithms", algorithmRoutes);
+app.use(modelRoutes);
+//app.use("/models", modelRoutes);
+
 //Demo 1
 app.get("/demo1", function (req, res) {
     res.render("demo1");
@@ -47,11 +52,6 @@ app.get("/demo2", function (req, res) {
 app.get("/demo3", function (req, res) {
     res.render("demo3");
 });
-
-app.use(modelRoutes);
-app.use("/models", modelRoutes);
-app.use(algorithmRoutes);
-app.use("/algorithms", algorithmRoutes);
 
 app.listen(process.env.PORT || 3001, function () {
     console.log("ML Predictor Server Started!")

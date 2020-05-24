@@ -8,19 +8,19 @@
                 <div class="image">
                     <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn%3AANd9GcQBsSN7QHEykLjI0rE6Ld5Cojo-d5xvKRdBoVgbfbxgBDCk3hIn&usqp=CAU"
                         alt="ML model">
-                        <div class="ui two bottom attached buttons">                        
-                            <a class="ui black button" href="/models/<%=model._id%>/edit">
-                                <i class="edit outline icon"></i>                          
-                            </a>
-                            <form class="ui form" action="/models/<%=model._id%>?_method=DELETE" method="POST">
-                                <button class="ui button">
-                                    <i class="black trash alternate icon"></i>                         
-                                </button>
-                            </form>
-                          </div>
+                    <div class="ui two bottom attached buttons">
+                        <a class="ui black button" href="/models/<%=model._id%>/edit">
+                            <i class="edit outline icon"></i>
+                        </a>
+                        <form class="ui form" action="/models/<%=model._id%>?_method=DELETE" method="POST">
+                            <button class="ui button">
+                                <i class="black trash alternate icon"></i>
+                            </button>
+                        </form>
+                    </div>
                 </div>
                 <div class="content">
-                    <a class="header" href="/models/<%=model._id%>"><%= model.name %></a>
+                    <a class="ui blue header" href="/models/<%=model._id%>"><%= model.name %></a>
                     <div class="meta">
                         <span><%= model.algorithm.name %></span>
                     </div>
@@ -30,8 +30,8 @@
                 </div>
             </div>
             <%});%>
-        </div>        
+        </div>
     </div>
     <a class="ui violet basic button" href="/models/new">Create New</a>
 </div>
-    <%- include ("partials/footer.ejs") %>
+<%- include ("partials/footer.ejs") %>
