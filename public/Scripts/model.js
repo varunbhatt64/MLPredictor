@@ -4,16 +4,44 @@ let trainingFeatureTensor, testingFeatureTensor, trainingLabelTensor, testingLab
 
 run();
 
+const storageID = "house-price-regression";
 async function save() {
+    const savedResults = await model.save(`localstorage://${storageID}`);
+
+    $('#model-status').html(`Trained (saved ${savedResults.modelArtifactsInfo.dateSaved})`);
+    $('#save-button').prop('disabled', true);
+}
+
+async function load() {
+    const storageKey = `localstorage://${storageID}`;
+    const models = await tf.io.listModels();
+    const modelInfo = models[storageKey];
+    if (modelInfo){
+        model = await tf.loadLayersModel(storageKey);
+        tfvis.show.modelSummary({ name: `Model Summary`/*, tab: `Model`*/ }, model);
+        $('#model-status').html(`Trained (saved ${modelInfo.dateSaved})`);
+        $('#load-button').prop('disabled', true);
+        $('#test-button').removeAttr('disabled');
+        $('#predict-button').removeAttr('disabled');
+    }
+    else{
+        alert("Could not load: no saved model found");
+    }
+
+}
+
+async function predict() {
 
 }
 
 async function test() {
+    testingLabelTensor.print();
+    testingFeatureTensor.print();
     const lossTensor = model.evaluate(testingFeatureTensor, testingLabelTensor);
     const loss = await lossTensor.dataSync();
     console.log(`Testing set loss: ${loss}`);
     $('#testing-status').html(
-        `Testing set loss: ${loss.toPrecision(5)}`
+        `Testing set loss: ${loss/*.toPrecision(5)*/}`
     );
 }
 
@@ -25,7 +53,7 @@ async function train() {
     model = createModel();
     tfvis.show.modelSummary({ name: `Model Summary`/*, tab: `Model`*/ }, model);
     const layer = model.getLayer(undefined, 0);
-    //tfvis.show.layer({ name: `Layer 1`, tab: `Model Inspection` }, layer);
+    //tfvis.show.layer({ name: "Layer 1"/*, tab: `Model Inspection`*/ }, layer);
 
     const result = await trainModel(model, trainingFeatureTensor, trainingLabelTensor);
     const trainingLoss = result.history.loss.pop();
@@ -38,6 +66,8 @@ async function train() {
         + `Validation set loss: ${validationLoss.toPrecision(5)}`);
 
     $('#test-button').removeAttr('disabled');
+    $('#save-button').removeAttr('disabled');
+    $('#predict-button').removeAttr('disabled');
 }
 
 async function toggleVisor() {
@@ -174,12 +204,5 @@ async function run() {
     // Update status and enable train button
     $('#model-status').html("Model not trained");
     $('#train-button').removeAttr('disabled');
-}
-
-async function predict() {
-
-}
-
-async function load() {
-
+    $('#load-button').removeAttr('disabled');
 }
