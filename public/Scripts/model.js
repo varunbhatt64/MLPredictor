@@ -1,4 +1,5 @@
 let model;
+let points;
 let normalizedFeature, normalizedLabel;
 let trainingFeatureTensor, testingFeatureTensor, trainingLabelTensor, testingLabelTensor;
 
@@ -19,6 +20,9 @@ async function load() {
     if (modelInfo){
         model = await tf.loadLayersModel(storageKey);
         tfvis.show.modelSummary({ name: `Model Summary`/*, tab: `Model`*/ }, model);
+
+        await plotPredictionLine();
+
         $('#model-status').html(`Trained (saved ${modelInfo.dateSaved})`);
         $('#load-button').prop('disabled', true);
         $('#test-button').removeAttr('disabled');
@@ -31,12 +35,28 @@ async function load() {
 }
 
 async function predict() {
-
+    const predctionInput = parseInt($('#prediction-input').val());
+    if(isNaN(predctionInput)){
+        alert("Please enter a valid number");
+    }
+    else if(predctionInput < 200){
+        alert("Please enter a value above 200");
+    }
+    else{
+        tf.tidy(()=>{
+            const inputTensor = tf.tensor1d([predctionInput]);
+            const normalizedInput = normalize(inputTensor, normalizedFeature.min, normalizedFeature.max);
+            const normalizedOutputTensor = model.predict(normalizedInput.tensor);
+            const outputTensor = denormalize(normalizedOutputTensor, normalizedLabel.min, normalizedLabel.max);
+            const outputValue = outputTensor.dataSync()[0];
+            const outputRoundedValue = (outputValue/1000).toFixed(0) * 1000;
+            $('#prediction-output').html(`The predicted house price is <br>`
+            + `<span style="font-size: 2em">\$${outputRoundedValue}</span>`);
+        })
+    }
 }
 
 async function test() {
-    testingLabelTensor.print();
-    testingFeatureTensor.print();
     const lossTensor = model.evaluate(testingFeatureTensor, testingLabelTensor);
     const loss = await lossTensor.dataSync();
     console.log(`Testing set loss: ${loss}`);
@@ -61,6 +81,9 @@ async function train() {
 
     const validationLoss = result.history.val_loss.pop();
     console.log(`Validation set loss: ${validationLoss}`);
+
+    await plotPredictionLine();
+
     $('#model-status').html(`Trained {unsaved}\n`
         + `Training set loss: ${trainingLoss.toPrecision(5)}\n`
         + `Validation set loss: ${validationLoss.toPrecision(5)}`);
@@ -74,9 +97,9 @@ async function toggleVisor() {
     tfvis.visor().toggle();
 }
 
-function normalize(tensor) {
-    const min = tensor.min();
-    const max = tensor.max();
+function normalize(tensor, previousMin = null, previousMax = null) {
+    const min = previousMin || tensor.min();
+    const max = previousMax || tensor.max();
     const normalizedTensor = tensor.sub(min).div(max.sub(min));
     return {
         tensor: normalizedTensor,
@@ -127,19 +150,46 @@ async function trainModel(model, trainingFeatureTensor, trainingLabelTensor) {
         callbacks: {
             onBatchEnd,
             onEpochEnd,
+            onEpochBegin: async function(){
+                await plotPredictionLine();
+            }
         }
     });
 }
 
-function plot(points, featureName, labelName) {
+function plot(pointsArray, featureName, labelName, predictedPointsArray = null) {
+    const values = [pointsArray];
+    const series = ['original'];
+    if(Array.isArray(predictedPointsArray)){
+        values.push(predictedPointsArray);
+        series.push("predicted");
+    }
     tfvis.render.scatterplot(
         { name: `${featureName} vs ${labelName}` },
-        { values: [points], series: ['original'] },
+        { values, series },
         {
             xLabel: featureName,
             yLabel: labelName
         }
     );
+}
+
+async function plotPredictionLine(){
+    //tf.tidy() - for cleanup
+    const [xs, ys] = tf.tidy(() => {
+        const normalizedXs = tf.linspace(0, 1, 100);
+        const normalizedYs = model.predict(normalizedXs.reshape([100, 1]));
+
+        const xs = denormalize(normalizedXs, normalizedFeature.min, normalizedFeature.max);
+        const ys = denormalize(normalizedYs, normalizedLabel.min, normalizedLabel.max);
+
+        return [xs.dataSync(), ys.dataSync()];
+    });
+
+    const predictionPoints = Array.from(xs).map((val, index) => {
+        return {x: val, y: ys[index]};
+    } );
+    plot(points, "Square feet", "Price", predictionPoints);
 }
 
 async function run() {
@@ -164,7 +214,7 @@ async function run() {
     });
     //console.log(await pointsDataset.toArray());
 
-    const points = await pointsDataset.toArray();
+    points = await pointsDataset.toArray();
     //if number of elements is odd then remove the last element to make split work
     if (points.length % 2 !== 0) {
         points.pop();
@@ -179,7 +229,7 @@ async function run() {
     const featureTensor = tf.tensor2d(featureValues, [featureValues.length, 1]);
 
     // extract Labels (outputs)
-    const labelValues = points.map(p => p.x);
+    const labelValues = points.map(p => p.y);
     const labelTensor = tf.tensor2d(labelValues, [labelValues.length, 1]);
 
     //featureTensor.print();
