@@ -1,38 +1,124 @@
-<%- include ("partials/header.ejs") %>
-<div class="ui main text container">
-    <div class="ui huge header">Model - <%= model.name %></div>
-    <form class="ui form" action="/models/:id" method="POST">
-    <div class="field">
-        <label>Input Data</label>
-        <input type="text" name="url" placeholder="input path" value="<%=model.inputPath%>">
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!-->
+<html class="no-js">
+<!--<![endif]-->
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title></title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+
+<body>
+    <!--[if lt IE 7]>
+            <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="#">upgrade your browser</a> to improve your experience.</p>
+        <![endif]-->
+    <!--   Header   -->
+    <div class="section no-pad-bot" id="index-banner">
+        <div class="container">
+            <h4 class="header center blue-text small">Model - <%= model.name %></h4>
+            <!-- <div class="row center">
+                <div class="col">
+                    <div class="card">
+                        <a href="">
+                            <div class="card-image">
+                                <p>Data input</p>
+                                <i class="material-icons" style="font-size: 6em">insert_chart</i>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div> -->
+            <!-- <div class="row center">
+        <h6 class="header col s12 light">Train a model to predict house price from living space.</h6>
+      </div> -->
+        </div>
     </div>
-    <div class="field">
-        <button class="ui violet basic button" id="preview">Preview</button>
+
+    <!--   Misc buttons   -->
+    <div class="section no-pad-bot light-blue lighten-4">
+        <div class="container">
+            <div class="row center">
+                <button id="toggle-button" class="waves-effect waves-light light-blue btn-small"
+                    onclick="toggleVisor()">Toggle Visor</button>
+                <br /><br />
+            </div>
+        </div>
     </div>
-    <div class="field">
-        <input type="submit" class="ui violet basic button" value="Train">
+
+    <!--   Main functionality   -->
+    <div class="container">
+        <div class="section">
+
+            <div class="row" id="main">
+                <!--   Training   -->
+                <div class="col s12 m6">
+                    <div class="icon-block">
+                        <h3 class="center light-blue-text"><i class="material-icons" style="font-size: 2em">build</i>
+                        </h3>
+                        <h5 class="center">Train & Test</h5>
+
+                        <p class="light"></p>
+
+                        <div>
+                            <p><label>Training status:</label></p>
+                            <pre class="grey lighten-4"
+                                style="overflow-x: auto"><em id="model-status">Loading data...</em></pre>
+
+                            <p><label>Testing status:</label></p>
+                            <pre class="grey lighten-4"
+                                style="overflow-x: auto"><em id="testing-status">Not yet tested</em></pre>
+
+                            <button autocomplete="off" id="train-button" class="waves-effect light-blue waves-light btn"
+                                disabled onclick="train()">Train New Model</button>
+                            <button autocomplete="off" id="test-button" class="waves-effect light-blue waves-light btn"
+                                disabled onclick="test()">Test Model</button>
+                        </div>
+                        <br />
+
+                        <div>
+                            <button autocomplete="off" id="load-button"
+                                class="waves-effect light-blue waves-light btn-small" disabled onclick="load()">Load
+                                Model</button>
+                            <button autocomplete="off" id="save-button"
+                                class="waves-effect light-blue waves-light btn-small" disabled onclick="save()">Save
+                                Model</button>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!--   Prediction   -->
+                <div class="col s12 m6">
+                    <div class="icon-block">
+                        <h3 class="center light-blue-text"><i class="material-icons" style="font-size: 2em">timeline</i>
+                        </h3>
+                        <h5 class="center">Predict</h5>
+
+                        <label>Square feet of living space: <input type="number" id="prediction-input"
+                                placeholder="2000" /></label>
+                        <button autocomplete="off" id="predict-button" class="waves-effect light-blue waves-light btn"
+                            disabled onclick="predict()">Predict house price</button>
+                        <p><strong id="prediction-output"></strong></p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
     </div>
-    </form>
-</div>
-<script src="https://code.jquery.com/jquery-3.5.1.min.js"
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"
     integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-vis"></script>
-<script>
-    $('#preview').click(function () {
-        const headers = [
-            'Col 1',
-            'Col 2',
-            'Col 3',
-        ];
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-vis"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.0.0/dist/tf.min.js"></script>
+    <script src="/Scripts/model.js" async defer></script>
+</body>
 
-        const values = [
-            [1, 2, 3],
-            ['4', '5', '6'],
-            ['strong>7</strong>', true, false],
-        ];
-
-        const surface = { name: 'Table', tab: 'Charts' };
-        tfvis.render.table(surface, { headers, values });
-    });
-</script>
-<%- include ("partials/footer.ejs") %>
+</html>
