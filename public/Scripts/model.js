@@ -3,6 +3,9 @@ let points;
 let normalizedFeature, normalizedLabel;
 let trainingFeatureTensor, testingFeatureTensor, trainingLabelTensor, testingLabelTensor;
 
+const csvUrl = $('#input').val();
+const algorithm = $('#algorithm').val();
+
 run();
 
 const storageID = "house-price-regression";
@@ -118,7 +121,7 @@ function createModel() {
     model.add(tf.layers.dense({
         units: 1,
         useBias: true,
-        activation: 'linear',
+        activation: algorithm.includes('Linear') ? 'linear': 'sigmoid',
         inputDim: 1,
     }));
     // define optimizer
@@ -141,7 +144,7 @@ async function trainModel(model, trainingFeatureTensor, trainingLabelTensor) {
 
     return model.fit(trainingFeatureTensor, trainingLabelTensor, {
         batchSize: 32,
-        epochs: 20,
+        epochs: algorithm.includes('Linear') ? 20 : 100,
         validationSplit: 0.2,
         // callbacks: {
         //     onEpochEnd: async (epoch, log) => {
@@ -194,7 +197,6 @@ async function plotPredictionLine(){
 
 async function run() {
     //import csv file
-    const csvUrl = "http://192.168.1.226:8080/kc_house_data.csv";
     const csvDataset = tf.data.csv(
         csvUrl, {
         columnConfigs: {
