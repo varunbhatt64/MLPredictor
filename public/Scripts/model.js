@@ -1,5 +1,6 @@
 let model;
 let points;
+let numOfFeatures;
 let normalizedFeature, normalizedLabel;
 let trainingFeatureTensor, testingFeatureTensor, trainingLabelTensor, testingLabelTensor;
 
@@ -101,19 +102,60 @@ async function toggleVisor() {
 }
 
 function normalize(tensor, previousMin = null, previousMax = null) {
-    const min = previousMin || tensor.min();
-    const max = previousMax || tensor.max();
-    const normalizedTensor = tensor.sub(min).div(max.sub(min));
-    return {
-        tensor: normalizedTensor,
-        min: min,
-        max: max
-    };
+    const featureDimention = tensor.shape.length > 1 && tensor.shape[1];
+
+    if (featureDimention && featureDimention > 1) {
+        // more than 1 feature
+        // split into separate tensors
+        const features = tf.split(tensor, featureDimention, 1);
+
+        // normalize and find min/max for each feature
+        const normalizedFeatures = features.map((featureTensor, i) =>
+            normalize(featureTensor,
+                previousMin ? previousMin[i] : null,
+                previousMax ? previousMax[i] : null
+            )
+        );
+
+        // now again concat the separate feature tensors to return
+        const returnTensor = tf.concat(normalizedFeatures.map(f => f.tensor), 1);
+        const min = normalizedFeatures.map(f => f.min);
+        const max = normalizedFeatures.map(f => f.max);
+
+        return { tensor: returnTensor, min, max };
+    }
+    else {
+        const min = previousMin || tensor.min();
+        const max = previousMax || tensor.max();
+        const normalizedTensor = tensor.sub(min).div(max.sub(min));
+        return {
+            tensor: normalizedTensor,
+            min: min,
+            max: max
+        };
+    }
 }
 
 function denormalize(tensor, min, max) {
-    const denormalizedTensor = tensor.mul(max.sub(min)).add(min);
-    return denormalizedTensor;
+    const featureDimention = tensor.shape.length > 1 && tensor.shape[1];
+
+    if (featureDimention && featureDimention > 1) {
+        // more than 1 feature
+        // split into separate tensors
+        const features = tf.split(tensor, featureDimention, 1);
+
+        const denormalized = features.map((featureTensor, i ) =>
+            denormalize(featureTensor, min[i], max[i])
+        );
+
+        const returnTensor = tf.concat(denormalized, 1);
+        return returnTensor;
+    }
+
+    else {
+        const denormalizedTensor = tensor.mul(max.sub(min)).add(min);
+        return denormalizedTensor;
+    }
 }
 
 function createModel() {
@@ -122,7 +164,8 @@ function createModel() {
         units: 1,
         useBias: true,
         activation: algorithm.includes('Linear') ? 'linear': 'sigmoid',
-        inputDim: 1,
+        // inputDim: 1,
+        inputShape: [numOfFeatures]
     }));
     // define optimizer
     const optimizer = tf.train.sgd(0.1);
@@ -144,7 +187,7 @@ async function trainModel(model, trainingFeatureTensor, trainingLabelTensor) {
 
     return model.fit(trainingFeatureTensor, trainingLabelTensor, {
         batchSize: 32,
-        epochs: algorithm.includes('Linear') ? 20 : 100,
+        epochs: algorithm.includes('Linear') ? 30 : 100,
         validationSplit: 0.2,
         // callbacks: {
         //     onEpochEnd: async (epoch, log) => {
@@ -207,11 +250,13 @@ async function run() {
     });
     //console.log(await csvDataset.take(1).toArray());
 
+    numOfFeatures = (await csvDataset.columnNames()).length - 1;
+
     //extract feature and label
     const pointsDataset = csvDataset.map(({ xs, ys }) => {
         return {
-            x: xs.sqft_living,
-            y: ys.price
+            x: Object.values(xs),
+            y: Object.values(ys)
         }
     });
     //console.log(await pointsDataset.toArray());
@@ -228,7 +273,7 @@ async function run() {
 
     // extract Features (inputs)
     const featureValues = points.map(p => p.x);
-    const featureTensor = tf.tensor2d(featureValues, [featureValues.length, 1]);
+    const featureTensor = tf.tensor2d(featureValues);
 
     // extract Labels (outputs)
     const labelValues = points.map(p => p.y);
