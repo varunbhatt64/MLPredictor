@@ -86,7 +86,8 @@ async function train() {
     const validationLoss = result.history.val_loss.pop();
     console.log(`Validation set loss: ${validationLoss}`);
 
-    await plotPredictionLine();
+    if(numOfFeatures === 1)
+        await plotPredictionLine();
 
     $('#model-status').html(`Trained {unsaved}\n`
         + `Training set loss: ${trainingLoss.toPrecision(5)}\n`
@@ -102,12 +103,12 @@ async function toggleVisor() {
 }
 
 function normalize(tensor, previousMin = null, previousMax = null) {
-    const featureDimention = tensor.shape.length > 1 && tensor.shape[1];
+    const tensorDimention = tensor.shape.length > 1 && tensor.shape[1];
 
-    if (featureDimention && featureDimention > 1) {
+    if (tensorDimention && tensorDimention > 1) {
         // more than 1 feature
         // split into separate tensors
-        const features = tf.split(tensor, featureDimention, 1);
+        const features = tf.split(tensor, tensorDimention, 1);
 
         // normalize and find min/max for each feature
         const normalizedFeatures = features.map((featureTensor, i) =>
@@ -137,12 +138,12 @@ function normalize(tensor, previousMin = null, previousMax = null) {
 }
 
 function denormalize(tensor, min, max) {
-    const featureDimention = tensor.shape.length > 1 && tensor.shape[1];
+    const tensorDimention = tensor.shape.length > 1 && tensor.shape[1];
 
-    if (featureDimention && featureDimention > 1) {
+    if (tensorDimention && tensorDimention > 1) {
         // more than 1 feature
         // split into separate tensors
-        const features = tf.split(tensor, featureDimention, 1);
+        const features = tf.split(tensor, tensorDimention, 1);
 
         const denormalized = features.map((featureTensor, i ) =>
             denormalize(featureTensor, min[i], max[i])
@@ -164,8 +165,7 @@ function createModel() {
         units: 1,
         useBias: true,
         activation: algorithm.includes('Linear') ? 'linear': 'sigmoid',
-        // inputDim: 1,
-        inputShape: [numOfFeatures]
+        inputDim: numOfFeatures,
     }));
     // define optimizer
     const optimizer = tf.train.sgd(0.1);
@@ -196,9 +196,9 @@ async function trainModel(model, trainingFeatureTensor, trainingLabelTensor) {
         callbacks: {
             onBatchEnd,
             onEpochEnd,
-            onEpochBegin: async function(){
-                await plotPredictionLine();
-            }
+            // onEpochBegin: async function(){
+            //     await plotPredictionLine();
+            // }
         }
     });
 }
