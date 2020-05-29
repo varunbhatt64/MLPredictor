@@ -1,4 +1,5 @@
 let model;
+let headers;
 let points;
 let numOfFeatures;
 let normalizedFeature, normalizedLabel;
@@ -22,7 +23,7 @@ async function load() {
     const storageKey = `localstorage://${storageID}`;
     const models = await tf.io.listModels();
     const modelInfo = models[storageKey];
-    if (modelInfo){
+    if (modelInfo) {
         model = await tf.loadLayersModel(storageKey);
         tfvis.show.modelSummary({ name: `Model Summary`/*, tab: `Model`*/ }, model);
 
@@ -33,7 +34,7 @@ async function load() {
         $('#test-button').removeAttr('disabled');
         $('#predict-button').removeAttr('disabled');
     }
-    else{
+    else {
         alert("Could not load: no saved model found");
     }
 
@@ -41,22 +42,22 @@ async function load() {
 
 async function predict() {
     const predctionInput = parseInt($('#prediction-input').val());
-    if(isNaN(predctionInput)){
+    if (isNaN(predctionInput)) {
         alert("Please enter a valid number");
     }
-    else if(predctionInput < 200){
+    else if (predctionInput < 200) {
         alert("Please enter a value above 200");
     }
-    else{
-        tf.tidy(()=>{
+    else {
+        tf.tidy(() => {
             const inputTensor = tf.tensor1d([predctionInput]);
             const normalizedInput = normalize(inputTensor, normalizedFeature.min, normalizedFeature.max);
             const normalizedOutputTensor = model.predict(normalizedInput.tensor);
             const outputTensor = denormalize(normalizedOutputTensor, normalizedLabel.min, normalizedLabel.max);
             const outputValue = outputTensor.dataSync()[0];
-            const outputRoundedValue = (outputValue/1000).toFixed(0) * 1000;
-            $('#prediction-output').html(`The predicted house price is <br>`
-            + `<span style="font-size: 2em">\$${outputRoundedValue}</span>`);
+            const outputRoundedValue = (outputValue / 1000).toFixed(0) * 1000;
+            $('#prediction-output').html(`The predicted ${label} is <br>`
+                + `<span style="font-size: 2em">\$${outputRoundedValue}</span>`);
         })
     }
 }
@@ -87,7 +88,7 @@ async function train() {
     const validationLoss = result.history.val_loss.pop();
     console.log(`Validation set loss: ${validationLoss}`);
 
-    if(numOfFeatures === 1)
+    if (numOfFeatures === 1)
         await plotPredictionLine();
 
     $('#model-status').html(`Trained {unsaved}\n`
@@ -146,7 +147,7 @@ function denormalize(tensor, min, max) {
         // split into separate tensors
         const features = tf.split(tensor, tensorDimention, 1);
 
-        const denormalized = features.map((featureTensor, i ) =>
+        const denormalized = features.map((featureTensor, i) =>
             denormalize(featureTensor, min[i], max[i])
         );
 
@@ -165,7 +166,7 @@ function createModel() {
     model.add(tf.layers.dense({
         units: 1,
         useBias: true,
-        activation: algorithm.includes('Linear') ? 'linear': 'sigmoid',
+        activation: algorithm.includes('Linear') ? 'linear' : 'sigmoid',
         inputDim: numOfFeatures,
     }));
     // define optimizer
@@ -197,9 +198,10 @@ async function trainModel(model, trainingFeatureTensor, trainingLabelTensor) {
         callbacks: {
             onBatchEnd,
             onEpochEnd,
-            // onEpochBegin: async function(){
-            //     await plotPredictionLine();
-            // }
+            onEpochBegin: async function () {
+                if (numOfFeatures === 1)
+                    await plotPredictionLine();
+            }
         }
     });
 }
@@ -207,21 +209,26 @@ async function trainModel(model, trainingFeatureTensor, trainingLabelTensor) {
 function plot(pointsArray, featureName, labelName, predictedPointsArray = null) {
     const values = [pointsArray];
     const series = ['original'];
-    if(Array.isArray(predictedPointsArray)){
-        values.push(predictedPointsArray);
-        series.push("predicted");
+    if (numOfFeatures > 1) {
+        console.log(`multi feature model..`);
     }
-    tfvis.render.scatterplot(
-        { name: `${featureName} vs ${labelName}` },
-        { values, series },
-        {
-            xLabel: featureName,
-            yLabel: labelName
+    else {
+        if (Array.isArray(predictedPointsArray)) {
+            values.push(predictedPointsArray);
+            series.push("predicted");
         }
-    );
+        tfvis.render.scatterplot(
+            { name: `${featureName} vs ${labelName}` },
+            { values, series },
+            {
+                xLabel: featureName,
+                yLabel: labelName
+            }
+        );
+    }
 }
 
-async function plotPredictionLine(){
+async function plotPredictionLine() {
     //tf.tidy() - for cleanup
     const [xs, ys] = tf.tidy(() => {
         const normalizedXs = tf.linspace(0, 1, 100);
@@ -234,9 +241,9 @@ async function plotPredictionLine(){
     });
 
     const predictionPoints = Array.from(xs).map((val, index) => {
-        return {x: val, y: ys[index]};
-    } );
-    plot(points, "Square feet", "Price", predictionPoints);
+        return { x: val, y: ys[index] };
+    });
+    plot(points, "Square feet", label, predictionPoints);
 }
 
 async function run() {
@@ -244,14 +251,16 @@ async function run() {
     const csvDataset = tf.data.csv(
         csvUrl, {
         columnConfigs: {
-            label: {
+            [label]: {
                 isLabel: true
             }
         }
     });
     //console.log(await csvDataset.take(1).toArray());
 
-    numOfFeatures = (await csvDataset.columnNames()).length - 1;
+    headers = await csvDataset.columnNames();
+    console.log(`headers - ${headers}`);
+    numOfFeatures = headers.length - 1;
 
     //extract feature and label
     const pointsDataset = csvDataset.map(({ xs, ys }) => {
@@ -270,7 +279,7 @@ async function run() {
     // shuffle the data
     tf.util.shuffle(points);
 
-    plot(points, "Square Feet", "Price");
+    plot(points, "Square Feet", label);
 
     // extract Features (inputs)
     const featureValues = points.map(p => p.x);
@@ -298,6 +307,12 @@ async function run() {
     // split dataset into testing and training - split doesn't work if number of elements are odd
     [trainingFeatureTensor, testingFeatureTensor] = tf.split(normalizedFeature.tensor, 2);
     [trainingLabelTensor, testingLabelTensor] = tf.split(normalizedLabel.tensor, 2);
+
+    // Add controls for features
+    headers.forEach(element => {
+        if(element !== label)
+            $('#features').append(`<label>${element.toUpperCase()}: <input type="number" id="${element}"/></label>`);
+      });
 
     // Update status and enable train button
     $('#model-status').html("Model not trained");
