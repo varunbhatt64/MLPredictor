@@ -6,6 +6,7 @@ let trainingFeatureTensor, testingFeatureTensor, trainingLabelTensor, testingLab
 
 const csvUrl = $('#input').val();
 const algorithm = $('#algorithm').val();
+const label = $('#label').val();
 
 run();
 
@@ -243,7 +244,7 @@ async function run() {
     const csvDataset = tf.data.csv(
         csvUrl, {
         columnConfigs: {
-            price: {
+            label: {
                 isLabel: true
             }
         }

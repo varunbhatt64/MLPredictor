@@ -105,7 +105,7 @@
                         <label>Square feet of living space: <input type="number" id="prediction-input"
                                 placeholder="2000" /></label>
                         <button autocomplete="off" id="predict-button" class="waves-effect light-blue waves-light btn"
-                            disabled onclick="predict()">Predict house price</button>
+                            disabled onclick="predict()">Predict <%=model.label%></button>
                         <p><strong id="prediction-output"></strong></p>
                     </div>
                 </div>
@@ -115,6 +115,7 @@
     </div>
     <input type="hidden" id="input" value="<%=model.inputPath%>">
     <input type="hidden" id="algorithm" value="<%=model.algorithm.name%>">
+    <input type="hidden" id="label" value="<%=model.label%>">
 
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"
     integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>

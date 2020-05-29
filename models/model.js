@@ -8,6 +8,7 @@ let modelSchema = mongoose.Schema({
     },
     mlCategory: String,
     inputPath: String,
+    label: String,
     isTrained: Boolean,
     isCustom: Boolean,
     description: String
