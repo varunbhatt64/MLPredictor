@@ -8,26 +8,27 @@ let trainingFeatureTensor, testingFeatureTensor, trainingLabelTensor, testingLab
 const csvUrl = $('#input').val();
 const algorithm = $('#algorithm').val();
 const label = $('#label').val();
+const storageId = $('#modelId').val();
+const storageKey = `localstorage://${storageId}`;
 
 run();
 
-const storageID = "house-price-regression";
 async function save() {
-    const savedResults = await model.save(`localstorage://${storageID}`);
+    const savedResults = await model.save(storageKey);
 
     $('#model-status').html(`Trained (saved ${savedResults.modelArtifactsInfo.dateSaved})`);
     $('#save-button').prop('disabled', true);
 }
 
 async function load() {
-    const storageKey = `localstorage://${storageID}`;
     const models = await tf.io.listModels();
     const modelInfo = models[storageKey];
     if (modelInfo) {
         model = await tf.loadLayersModel(storageKey);
         tfvis.show.modelSummary({ name: `Model Summary`/*, tab: `Model`*/ }, model);
 
-        await plotPredictionLine();
+        if (numOfFeatures === 1)
+            await plotPredictionLine();
 
         $('#model-status').html(`Trained (saved ${modelInfo.dateSaved})`);
         $('#load-button').prop('disabled', true);
@@ -41,24 +42,33 @@ async function load() {
 }
 
 async function predict() {
-    const predctionInput = parseInt($('#prediction-input').val());
-    if (isNaN(predctionInput)) {
-        alert("Please enter a valid number");
-    }
-    else if (predctionInput < 200) {
-        alert("Please enter a value above 200");
-    }
-    else {
+    //const predctionInput = parseInt($('#prediction-input').val());
+    let inputs = [];
+    headers.forEach(element => {
+        if(element !== label)
+        {
+            element = element.trimEnd();
+            const predctionInput = parseInt($(`#${element}`).val());
+            if (isNaN(predctionInput)) {
+                alert(`Please enter a valid number for ${element}`);
+                return;
+            }
+            else
+                inputs.push(predctionInput);
+        }
+    });
+    console.log(`Inputs - ${inputs}`);
+    if (inputs.length === numOfFeatures) {
         tf.tidy(() => {
-            const inputTensor = tf.tensor1d([predctionInput]);
+            const inputTensor = tf.tensor2d([inputs]);
             const normalizedInput = normalize(inputTensor, normalizedFeature.min, normalizedFeature.max);
             const normalizedOutputTensor = model.predict(normalizedInput.tensor);
             const outputTensor = denormalize(normalizedOutputTensor, normalizedLabel.min, normalizedLabel.max);
             const outputValue = outputTensor.dataSync()[0];
             const outputRoundedValue = (outputValue / 1000).toFixed(0) * 1000;
             $('#prediction-output').html(`The predicted ${label} is <br>`
-                + `<span style="font-size: 2em">\$${outputRoundedValue}</span>`);
-        })
+                + `<span style="font-size: 2em">${outputRoundedValue}</span>`);
+        });
     }
 }
 
@@ -189,7 +199,7 @@ async function trainModel(model, trainingFeatureTensor, trainingLabelTensor) {
 
     return model.fit(trainingFeatureTensor, trainingLabelTensor, {
         batchSize: 32,
-        epochs: algorithm.includes('Linear') ? 30 : 100,
+        epochs: algorithm.includes('Linear') ? 20 : 100,
         validationSplit: 0.2,
         // callbacks: {
         //     onEpochEnd: async (epoch, log) => {
@@ -310,8 +320,10 @@ async function run() {
 
     // Add controls for features
     headers.forEach(element => {
-        if(element !== label)
+        if(element !== label){
+            element = element.trimEnd();
             $('#features').append(`<label>${element.toUpperCase()}: <input type="number" id="${element}"/></label>`);
+        }
       });
 
     // Update status and enable train button
