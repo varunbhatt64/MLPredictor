@@ -105,7 +105,9 @@ async function train() {
         + `Training set loss: ${trainingLoss.toPrecision(5)}\n`
         + `Validation set loss: ${validationLoss.toPrecision(5)}`);
 
+    $('#train-button').removeAttr('disabled');
     $('#test-button').removeAttr('disabled');
+    $('#load-button').removeAttr('disabled');
     $('#save-button').removeAttr('disabled');
     $('#predict-button').removeAttr('disabled');
 }
@@ -172,6 +174,13 @@ function denormalize(tensor, min, max) {
 }
 
 function createModel() {
+    const learningRate = $('#learning-rate').val();
+    const optimizerFunc = $('#optimizer').val();
+    const lossMethod = $('#loss-method').val();
+    const numLayers = parseInt($('#layers').val());
+
+    console.log(`learning rate - ${learningRate} optimizer - ${optimizerFunc} loss method - ${lossMethod} layers - ${numLayers}`);
+
     model = tf.sequential();
     model.add(tf.layers.dense({
         units: 1,
@@ -197,10 +206,14 @@ async function trainModel(model, trainingFeatureTensor, trainingLabelTensor) {
         ['loss']
     );
 
+    const batchSize = parseInt($('#batch-size').val());
+    const epochs = parseInt($('#epochs').val());
+    const validationSetSize = parseInt($('#validation-size').val())/100;
+
     return model.fit(trainingFeatureTensor, trainingLabelTensor, {
-        batchSize: 32,
-        epochs: algorithm.includes('Linear') ? 20 : 100,
-        validationSplit: 0.2,
+        batchSize: batchSize,
+        epochs: epochs,
+        validationSplit: validationSetSize,
         // callbacks: {
         //     onEpochEnd: async (epoch, log) => {
         //         console.log(`epoch ${epoch}: loss = ${log.loss}`);
