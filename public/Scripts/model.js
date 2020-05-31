@@ -182,14 +182,28 @@ function createModel() {
     console.log(`learning rate - ${learningRate} optimizer - ${optimizerFunc} loss method - ${lossMethod} layers - ${numLayers}`);
 
     model = tf.sequential();
+    
+    const activation = algorithm.includes('Linear') ? 'linear' : 'sigmoid';
+
+    for (let index = 0; index < numLayers - 1; index++) {
+        model.add(tf.layers.dense({
+            units: 10,
+            useBias: true,
+            activation: activation,
+            inputDim: index === 0 ? numOfFeatures : 10,
+        }));
+    }
+
+    // output layer
     model.add(tf.layers.dense({
         units: 1,
         useBias: true,
-        activation: algorithm.includes('Linear') ? 'linear' : 'sigmoid',
-        inputDim: numOfFeatures,
+        activation: activation,
+        inputDim: numLayers === 1 ? numOfFeatures : 10,
     }));
+
     // define optimizer
-    const optimizer = tf.train.sgd(0.1);
+    const optimizer = tf.train.adam(0.1);
 
     //compile the model
     model.compile({
