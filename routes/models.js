@@ -50,8 +50,12 @@ router.get("/models/:id", function (req, res) {
     Model.findById(req.params.id).populate('algorithm').exec(function (err, foundModel) {
         if (err)
             res.redirect("/models");
-        else
-            res.render("model", { model: foundModel });
+        else {
+            if (foundModel.algorithm.type === "regression")
+                res.render("modelRegression", { model: foundModel });
+            else
+                res.render("modelClassification", { model: foundModel });
+        }
     });
 });
 
