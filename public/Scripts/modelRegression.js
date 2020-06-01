@@ -1,5 +1,6 @@
 let model;
 let headers;
+let featureNames = [];
 let points;
 let numOfFeatures;
 let normalizedFeature, normalizedLabel;
@@ -280,7 +281,7 @@ async function plotPredictionLine() {
     const predictionPoints = Array.from(xs).map((val, index) => {
         return { x: val, y: ys[index] };
     });
-    plot(points, "Square feet", label, predictionPoints);
+    plot(points, featureNames[0], label, predictionPoints);
 }
 
 async function run() {
@@ -296,7 +297,8 @@ async function run() {
     //console.log(await csvDataset.take(1).toArray());
 
     headers = await csvDataset.columnNames();
-    console.log(`headers - ${headers}`);
+    featureNames = headers.filter(value => value !== label);
+    console.log(`headers - ${headers} features - ${featureNames}`);
     numOfFeatures = headers.length - 1;
 
     //extract feature and label
@@ -316,7 +318,7 @@ async function run() {
     // shuffle the data
     tf.util.shuffle(points);
 
-    plot(points, "Square Feet", label);
+    plot(points, featureNames[0], label);
 
     // extract Features (inputs)
     const featureValues = points.map(p => p.x);
@@ -349,6 +351,7 @@ async function run() {
     headers.forEach(element => {
         if(element !== label){
             element = element.trimEnd();
+            featureNames.push(element);
             $('#features').append(`<label>${element.toUpperCase()}: <input type="number" id="${element}"/></label>`);
         }
       });
