@@ -7,6 +7,23 @@
             <input type="text" name="algorithm[name]" placeholder="name" value="<%=algorithm.name%>">
         </div>        
         <div class="field">
+            <label>Type</label>
+            <div class="inline fields">
+                <div class="field">
+                    <div class="ui radio checkbox">
+                        <input type="radio" name="algorithm[type]" value="regression" <%=algorithm.type === 'regression' ? "checked" : "" %>>
+                        <label>Regression</label>
+                    </div>
+                </div>
+                <div class="field">
+                    <div class="ui radio checkbox">
+                        <input type="radio" name="algorithm[type]" value="classification" <%=algorithm.type === 'classification' ? "checked" : ""%>>
+                        <label>Classification</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="field">
             <label>Desription</label>
             <textarea name="algorithm[description]" placeholder="description"><%=algorithm.description%></textarea>
         </div>

@@ -45,6 +45,7 @@ router.get("/:id/edit", function (req, res) {
 
 //UPDATE Route-PUT
 router.put("/:id", function (req, res) {
+    console.log(req.body.algorithm);
     Algorithm.findByIdAndUpdate(req.params.id, req.body.algorithm, function (err, updatedAlgorithm) {
         if (err)
             res.redirect("/algorithms" + req.params.id + "/edit");
