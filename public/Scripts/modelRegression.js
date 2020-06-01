@@ -1,6 +1,6 @@
 let model;
 let headers;
-let featureNames = [];
+let featureNames;
 let points;
 let numOfFeatures;
 let normalizedFeature, normalizedLabel;
@@ -299,7 +299,7 @@ async function run() {
     headers = await csvDataset.columnNames();
     featureNames = headers.filter(value => value !== label);
     console.log(`headers - ${headers} features - ${featureNames}`);
-    numOfFeatures = headers.length - 1;
+    numOfFeatures = featureNames.length;
 
     //extract feature and label
     const pointsDataset = csvDataset.map(({ xs, ys }) => {
