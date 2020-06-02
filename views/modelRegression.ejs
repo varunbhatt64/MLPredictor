@@ -4,7 +4,7 @@
     <h1 class="ui center aligned blue header">
         Model - <%= model.name %>
     </h1>
-      <h6 class="ui red header" onclick="toggleVisor()">
+    <h6 class="ui red header" onclick="toggleVisor()">
         <i class="shuffle icon"></i>
         <div class="content">
             Visor
@@ -12,121 +12,144 @@
     </h6>
     <!-- Define 2 tabs -->
     <!-- <div class="ui attached segment"> -->
-    <div class="ui top attached tabular menu">
-        <a class="active item" data-tab="first">Train & Test</a>
-        <a class="item" data-tab="second">Predict</a>
+    <div class="ui pointing secondary menu">
+        <a class="active item" data-tab="train">Train</a>
+        <a class="item" data-tab="predict">Predict</a>
     </div>
     <!-- Train tab -->
-    <div class="ui bottom attached active tab segment" data-tab="first">
-        <h2 class="ui center aligned icon blue header">
+    <div class="ui active tab segment" data-tab="train">
+        <h3 class="ui center aligned icon blue header">
             <i class="settings icon"></i>
             Train & Test
-        </h2>
-        <div class="ui top attached segment">
-            <h4 class="ui header">
-                <i class="sliders icon"></i>
-                <div class="content">
-                    Hyperparameters:
-                </div>
-            </h4>
-            <div class="ui segment">
-                <div class="ui fluid form">
-                    <div class="two fields">
-                        <div class="field">
-                            <label>Training Dataset size(%):</label>
-                            <input type="number" id="training-size" />
-                        </div>
-                        <div class="field">
-                            <label>Validation Dataset size(%):</label>
-                            <input type="number" id="validation-size" />
-                        </div>
-                    </div>
-                    <div class="two fields">
-                        <div class="field">
-                            <label>Number of Epochs:</label>
-                            <input type="number" id="epochs" />
-                        </div>
-                        <div class="field">
-                            <label>Batch size:</label>
-                            <input type="number" id="batch-size" />
-                        </div>
-                    </div>
-                    <div class="two fields">
-                        <div class="field">
-                            <label>Optimizer:</label>
-                            <select class="ui dropdown" id="optimizer">
-                                <option value=0>Sgd</option>
-                                <option value=1>Adam</option>
-                            </select>
-                        </div>
-                        <div class="field">
-                            <label>Learning rate:</label>
-                            <input type="text" id="learning-rate" />
-                        </div>
-                    </div>
-                    <div class="two fields">
-                        <div class="field">
-                            <label>Loss method:</label>
-                            <select class="ui dropdown" id="loss-method">
-                                <option value=0>meanSquaredError</option>
-                                <option value=1>binaryCrossentropy</option>
-                                <option value=2>categoricalCrossentropy</option>
-                            </select>
-                        </div>
-                        <div class="field">
-                            <label>Number of Layers:</label>
-                            <input type="number" id="layers" />
-                        </div>
+        </h3>
+        <div class="ui divider"></div>
+        <!-- <div class="ui top attached segment"> -->
+        <h5 class="ui header">
+            <i class="sliders icon"></i>
+            <div class="content">
+                Hyperparameters:
+            </div>
+        </h5>
+        <div class="ui segment">
+            <div class="ui fluid form">
+                <div class="two fields">
+                    <div class="field">
+                        <label>Training Dataset size(%):</label>
+                        <input type="number" id="training-size" />
                     </div>
                     <div class="field">
-                        <div class="ui checkbox">
-                            <input type="checkbox" id="default" onclick="toggleParams()">
-                            <label>Use default parameters</label>
-                        </div>
-                    </div>
-                    <button class="ui secondary submit button" id="train-button" disabled onclick="train()">Train
-                        Model</button>
-                    <button class="ui secondary submit button" id="test-button" disabled onclick="test()">Test
-                        Model</button>
-                    <button class="ui secondary submit button" id="load-button" disabled onclick="load()">Load</button>
-                    <button class="ui secondary submit button" id="save-button" disabled onclick="save()">Save</button>
-                </div>
-            </div>
-
-            <div class="ui steps">
-                <div class="disabled step" id="trained-step">
-                    <i class="microchip icon"></i>
-                    <div class="content">
-                        <div class="title">Trained</div>
+                        <label>Validation Dataset size(%):</label>
+                        <input type="number" id="validation-size" />
                     </div>
                 </div>
-                <div class="disabled step" id="tested-step">
-                    <i class="tasks icon"></i>
-                    <div class="content">
-                        <div class="title">Tested</div>
+                <div class="two fields">
+                    <div class="field">
+                        <label>Number of Epochs:</label>
+                        <input type="number" id="epochs" />
+                    </div>
+                    <div class="field">
+                        <label>Batch size:</label>
+                        <input type="number" id="batch-size" />
                     </div>
                 </div>
-                <div class="disabled step" id="saved-step">
-                    <i class="save icon"></i>
-                    <div class="content">
-                        <div class="title">Saved</div>
+                <div class="two fields">
+                    <div class="field">
+                        <label>Optimizer:</label>
+                        <select class="ui dropdown" id="optimizer">
+                            <option value=0>Sgd</option>
+                            <option value=1>Adam</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>Learning rate:</label>
+                        <input type="text" id="learning-rate" />
                     </div>
                 </div>
-            </div>
-
-            <div>
-                <h4 class="ui blue header">Training status:</h4>
-                <div class="ui blue message"><em id="model-status">Loading data...</em></div>
-
-                <h4 class="ui blue header">Testing status:</h4>
-                <div class="ui blue message"><em id="testing-status">Not yet tested</em></div>
+                <div class="two fields">
+                    <div class="field">
+                        <label>Loss method:</label>
+                        <select class="ui dropdown" id="loss-method">
+                            <option value=0>meanSquaredError</option>
+                            <option value=1>binaryCrossentropy</option>
+                            <option value=2>categoricalCrossentropy</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>Number of Layers:</label>
+                        <input type="number" id="layers" />
+                    </div>
+                </div>
+                <div class="field">
+                    <div class="ui checkbox">
+                        <input type="checkbox" id="default" onclick="toggleParams()">
+                        <label>Use default parameters</label>
+                    </div>
+                </div>
+                <div class="ui divider"></div>
+                <button class="ui secondary submit button" id="train-button" disabled onclick="train()">Train
+                    Model</button>
+                <button class="ui secondary submit button" id="test-button" disabled onclick="test()">Test
+                    Model</button>
+                <button class="ui secondary submit button" id="load-button" disabled onclick="load()">Load</button>
+                <button class="ui secondary submit button" id="save-button" disabled onclick="save()">Save</button>
             </div>
         </div>
+
+        <div class="ui steps">
+            <div class="disabled step" id="trained-step">
+                <i class="microchip icon"></i>
+                <div class="content">
+                    <div class="title">Trained</div>
+                </div>
+            </div>
+            <div class="disabled step" id="tested-step">
+                <i class="tasks icon"></i>
+                <div class="content">
+                    <div class="title">Tested</div>
+                </div>
+            </div>
+            <div class="disabled step" id="saved-step">
+                <i class="save icon"></i>
+                <div class="content">
+                    <div class="title">Saved</div>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <h4 class="ui blue header">Training status:</h4>
+            <div class="ui blue message"><em id="model-status">Loading data...</em></div>
+
+            <h4 class="ui blue header">Testing status:</h4>
+            <div class="ui blue message"><em id="testing-status">Not yet tested</em></div>
+        </div>
+        <!-- </div> -->
     </div>
     <!-- Train tab end -->
     <!-- Predict tab -->
-    <div class="ui bottom attached tab segment" data-tab="second">
-        Train
+    <div class="ui tab segment" data-tab="predict">
+        <h3 class="ui center aligned icon blue header">
+            <i class="settings icon"></i>
+            Predict
+        </h3>
+        <div class="ui divider"></div>
+        <h5 class="ui header">
+            <i class="sliders icon"></i>
+            <div class="content">
+                Features:
+            </div>
+        </h5>
+        <div class="ui segment">
+            <div class="ui fluid form">
+                <div id="features">
+                </div>
+                <div class="ui divider"></div>
+                <button class="ui secondary submit button" id="predict-button" disabled onclick="predict()">Predict
+                    <%=model.label%></button>
+                <!-- <p><strong id="prediction-output"></strong></p> -->
+                <div class="ui blue message"><em id="prediction-output">No trained model...</em></div>
+            </div>
+        </div>
     </div>
     <!-- </div> -->
 </div>

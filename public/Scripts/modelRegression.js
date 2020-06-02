@@ -38,6 +38,7 @@ async function load() {
             await plotPredictionLine();
 
         $('#model-status').html(`Trained (saved ${modelInfo.dateSaved})`);
+        $('#prediction-output').html('');
         $('#load-button').prop('disabled', true);
         $('#test-button').removeAttr('disabled');
         $('#predict-button').removeAttr('disabled');
@@ -119,6 +120,8 @@ async function train() {
     $('#model-status').html(`Trained {unsaved}\n`
         + `Training set loss: ${trainingLoss.toPrecision(5)}\n`
         + `Validation set loss: ${validationLoss.toPrecision(5)}`);
+
+    $('#prediction-output').html('');
 
     $('#train-button').removeAttr('disabled');
     $('#test-button').removeAttr('disabled');
@@ -400,7 +403,11 @@ async function run() {
         if (element !== label) {
             element = element.trimEnd();
             featureNames.push(element);
-            $('#features').append(`<label>${element.toUpperCase()}: <input type="number" id="${element}"/></label>`);
+            // $('#features').append(`<label>${element.toUpperCase()}: <input type="number" id="${element}"/></label>`);
+            $('#features').append(`<div class="field">
+            <label>${element.toUpperCase()}:</label>
+            <input type="number" id="${element}">
+            </div>`);
         }
     });
 
