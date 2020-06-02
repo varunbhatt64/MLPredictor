@@ -75,7 +75,8 @@ router.post("/models", function (req, res) {
 });
 
 //Load data - Post
-router.post("/models/:id", async function (req, res) {
+router.post("/models/:id", function (req, res) {
+    console.log(req.body);
     // const csvDataset = tf.data.csv(
     //     req.body.url, {
     //     columnConfigs: {
@@ -86,7 +87,7 @@ router.post("/models/:id", async function (req, res) {
     // });
     //let columnNames = await csvDataset.take(10).toArray();
     //console.log(columnNames);
-    await run(req.body.url, 'price');
+    //await run(req.body.url, 'price');
 
     // const points = csvDataset.map(record => ({
     //     x: record.sqft_living15,

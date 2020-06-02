@@ -12,6 +12,9 @@ const label = $('#label').val();
 const storageId = $('#modelId').val();
 const storageKey = `localstorage://${storageId}`;
 
+//const storageKey = `http://localhost:3001/upload`;
+//const storageKey = `downloads://${storageId}`;
+
 run();
 
 async function save() {
@@ -66,7 +69,7 @@ async function predict() {
             const normalizedOutputTensor = model.predict(normalizedInput.tensor);
             const outputTensor = denormalize(normalizedOutputTensor, normalizedLabel.min, normalizedLabel.max);
             const outputValue = outputTensor.dataSync()[0];
-            const outputRoundedValue = (outputValue / 1000).toFixed(0) * 1000;
+            const outputRoundedValue = outputValue.toFixed(2);
             $('#prediction-output').html(`The predicted ${label} is <br>`
                 + `<span style="font-size: 2em">${outputRoundedValue}</span>`);
         });
