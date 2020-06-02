@@ -22,6 +22,9 @@ async function save() {
 
     $('#model-status').html(`Trained (saved ${savedResults.modelArtifactsInfo.dateSaved})`);
     $('#save-button').prop('disabled', true);
+    // change status of step saved
+    $('#saved-step').removeClass('disabled');
+    $('#saved-step').addClass('completed');
 }
 
 async function load() {
@@ -38,6 +41,10 @@ async function load() {
         $('#load-button').prop('disabled', true);
         $('#test-button').removeAttr('disabled');
         $('#predict-button').removeAttr('disabled');
+
+        // change status of step trained
+        $('#trained-step').removeClass('disabled');
+        $('#trained-step').addClass('completed');
     }
     else {
         alert("Could not load: no saved model found");
@@ -49,8 +56,7 @@ async function predict() {
     //const predctionInput = parseInt($('#prediction-input').val());
     let inputs = [];
     headers.forEach(element => {
-        if(element !== label)
-        {
+        if (element !== label) {
             element = element.trimEnd();
             const predctionInput = parseInt($(`#${element}`).val());
             if (isNaN(predctionInput)) {
@@ -83,6 +89,9 @@ async function test() {
     $('#testing-status').html(
         `Testing set loss: ${loss/*.toPrecision(5)*/}`
     );
+    // change status of step tested
+    $('#tested-step').removeClass('disabled');
+    $('#tested-step').addClass('completed');
 }
 
 async function train() {
@@ -90,12 +99,14 @@ async function train() {
     $('#main').find(':button').prop('disabled', true);
     $('#model-status').html('Training...');
 
-    model = createModel();
+    const useDefault = $('#default').is(":checked");
+    const trainingSetSize = useDefault ? 0.8 : parseInt($('#training-size').val()) / 100;
+    model = createModel(useDefault);
     tfvis.show.modelSummary({ name: `Model Summary`/*, tab: `Model`*/ }, model);
     const layer = model.getLayer(undefined, 0);
     //tfvis.show.layer({ name: "Layer 1"/*, tab: `Model Inspection`*/ }, layer);
 
-    const result = await trainModel(model, trainingFeatureTensor, trainingLabelTensor);
+    const result = await trainModel(model, trainingFeatureTensor, trainingLabelTensor, useDefault);
     const trainingLoss = result.history.loss.pop();
     console.log(`Training set loss: ${trainingLoss}`);
 
@@ -114,6 +125,10 @@ async function train() {
     $('#load-button').removeAttr('disabled');
     $('#save-button').removeAttr('disabled');
     $('#predict-button').removeAttr('disabled');
+
+    // change status of step trained
+    $('#trained-step').removeClass('disabled');
+    $('#trained-step').addClass('completed');
 }
 
 async function toggleVisor() {
@@ -177,16 +192,46 @@ function denormalize(tensor, min, max) {
     }
 }
 
-function createModel() {
-    const learningRate = $('#learning-rate').val();
-    const optimizerFunc = $('#optimizer').val();
-    const lossMethod = $('#loss-method').val();
-    const numLayers = parseInt($('#layers').val());
+function toggleParams() {
+    $('#training-size').prop('disabled', function (i, v) { return !v; });
+    $('#validation-size').prop('disabled', function (i, v) { return !v; });
+    $('#epochs').prop('disabled', function (i, v) { return !v; });
+    $('#batch-size').prop('disabled', function (i, v) { return !v; });
+    $('#learning-rate').prop('disabled', function (i, v) { return !v; });
+    $('#optimizer').prop('disabled', function (i, v) { return !v; });
+    $('#loss-method').prop('disabled', function (i, v) { return !v; });
+    $('#layers').prop('disabled', function (i, v) { return !v; });
+}
 
-    console.log(`learning rate - ${learningRate} optimizer - ${optimizerFunc} loss method - ${lossMethod} layers - ${numLayers}`);
+function createModel(useDefault) {
+    const learningRate = useDefault ? 0.2 : $('#learning-rate').val();
+    const numLayers = useDefault ? 1 : parseInt($('#layers').val());
+    const optimizerFuncOption = $('#optimizer').val();
+    const lossMethodOption = $('#loss-method').val();
+
+    console.log(`learning rate - ${learningRate} optimizer - ${optimizerFuncOption} loss method - ${lossMethodOption} layers - ${numLayers}`);
+
+    let optimizerFunc;
+    let lossMethod;
+
+    // set optimizer
+    if (optimizerFuncOption === '0')
+        optimizerFunc = tf.train.sgd(learningRate);
+    else if (optimizerFuncOption === '1')
+        optimizerFunc = tf.train.adam(learningRate);
+
+    // set loss method
+    if (lossMethodOption === '0')
+        lossMethod = 'meanSquaredError';
+    else if (lossMethodOption === '1')
+        lossMethod = 'binaryCrossentropy';
+    else if (lossMethodOption === '2')
+        lossMethod = 'categoricalCrossentropy';
+
+    console.log(`optimizer - ${optimizerFunc} loss method - ${lossMethod}`);
 
     model = tf.sequential();
-    
+
     const activation = algorithm.includes('Linear') ? 'linear' : 'sigmoid';
 
     for (let index = 0; index < numLayers - 1; index++) {
@@ -207,26 +252,26 @@ function createModel() {
     }));
 
     // define optimizer
-    const optimizer = tf.train.adam(0.1);
+    const optimizer = useDefault ? tf.train.adam(0.1) : optimizerFunc;
 
     //compile the model
     model.compile({
-        loss: 'meanSquaredError',
+        loss: useDefault ? 'meanSquaredError' : lossMethod,
         optimizer,
     });
 
     return model;
 }
 
-async function trainModel(model, trainingFeatureTensor, trainingLabelTensor) {
+async function trainModel(model, trainingFeatureTensor, trainingLabelTensor, useDefault) {
     const { onBatchEnd, onEpochEnd } = tfvis.show.fitCallbacks(
         { name: "Training Performance" },
         ['loss']
     );
 
-    const batchSize = parseInt($('#batch-size').val());
-    const epochs = parseInt($('#epochs').val());
-    const validationSetSize = parseInt($('#validation-size').val())/100;
+    const batchSize = useDefault ? 32 : parseInt($('#batch-size').val());
+    const epochs = useDefault ? 30 : parseInt($('#epochs').val());
+    const validationSetSize = useDefault ? 0.1 : parseInt($('#validation-size').val()) / 100;
 
     return model.fit(trainingFeatureTensor, trainingLabelTensor, {
         batchSize: batchSize,
@@ -352,12 +397,12 @@ async function run() {
 
     // Add controls for features
     headers.forEach(element => {
-        if(element !== label){
+        if (element !== label) {
             element = element.trimEnd();
             featureNames.push(element);
             $('#features').append(`<label>${element.toUpperCase()}: <input type="number" id="${element}"/></label>`);
         }
-      });
+    });
 
     // Update status and enable train button
     $('#model-status').html("Model not trained");

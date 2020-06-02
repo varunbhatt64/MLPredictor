@@ -4,6 +4,12 @@
     <h1 class="ui center aligned blue header">
         Model - <%= model.name %>
     </h1>
+      <h6 class="ui red header" onclick="toggleVisor()">
+        <i class="shuffle icon"></i>
+        <div class="content">
+            Visor
+        </div>
+    </h6>
     <!-- Define 2 tabs -->
     <!-- <div class="ui attached segment"> -->
     <div class="ui top attached tabular menu">
@@ -18,7 +24,7 @@
         </h2>
         <div class="ui top attached segment">
             <h4 class="ui header">
-                <i class="cogs icon"></i>
+                <i class="sliders icon"></i>
                 <div class="content">
                     Hyperparameters:
                 </div>
@@ -37,7 +43,7 @@
                     </div>
                     <div class="two fields">
                         <div class="field">
-                            <label>No of Epochs:</label>
+                            <label>Number of Epochs:</label>
                             <input type="number" id="epochs" />
                         </div>
                         <div class="field">
@@ -68,14 +74,14 @@
                             </select>
                         </div>
                         <div class="field">
-                            <label>Number of layers:</label>
+                            <label>Number of Layers:</label>
                             <input type="number" id="layers" />
                         </div>
                     </div>
                     <div class="field">
                         <div class="ui checkbox">
-                            <input type="checkbox">
-                            <label>Use Default parameters:</label>
+                            <input type="checkbox" id="default" onclick="toggleParams()">
+                            <label>Use default parameters</label>
                         </div>
                     </div>
                     <button class="ui secondary submit button" id="train-button" disabled onclick="train()">Train
@@ -88,19 +94,19 @@
             </div>
 
             <div class="ui steps">
-                <div class="disabled step">
+                <div class="disabled step" id="trained-step">
                     <i class="microchip icon"></i>
                     <div class="content">
                         <div class="title">Trained</div>
                     </div>
                 </div>
-                <div class="disabled step">
-                    <i class="credit card icon"></i>
+                <div class="disabled step" id="tested-step">
+                    <i class="tasks icon"></i>
                     <div class="content">
                         <div class="title">Tested</div>
                     </div>
                 </div>
-                <div class="disabled step">
+                <div class="disabled step" id="saved-step">
                     <i class="save icon"></i>
                     <div class="content">
                         <div class="title">Saved</div>
