@@ -23,8 +23,8 @@ i.icon{
   margin-top:10em; 
 }
 
-.container.main {
-  max-width: 800px;
+.ui.text.container {
+  max-width: 800px !important;
 }
 
 .gradient-grey-top{
