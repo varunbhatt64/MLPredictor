@@ -399,16 +399,14 @@ async function run() {
     [trainingLabelTensor, testingLabelTensor] = tf.split(normalizedLabel.tensor, 2);
 
     // Add controls for features
-    headers.forEach(element => {
-        if (element !== label) {
-            element = element.trimEnd();
-            featureNames.push(element);
-            // $('#features').append(`<label>${element.toUpperCase()}: <input type="number" id="${element}"/></label>`);
-            $('#features').append(`<div class="field">
+    featureNames.forEach(element => {
+        element = element.trimEnd();
+        //featureNames.push(element);
+        // $('#features').append(`<label>${element.toUpperCase()}: <input type="number" id="${element}"/></label>`);
+        $('#features').append(`<div class="field">
             <label>${element.toUpperCase()}:</label>
             <input type="number" id="${element}">
             </div>`);
-        }
     });
 
     // Update status and enable train button

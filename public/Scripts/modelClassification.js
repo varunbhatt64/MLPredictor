@@ -19,6 +19,9 @@ async function save() {
 
     $('#model-status').html(`Trained (saved ${savedResults.modelArtifactsInfo.dateSaved})`);
     $('#save-button').prop('disabled', true);
+    // change status of step saved
+    $('#saved-step').removeClass('disabled');
+    $('#saved-step').addClass('completed');
 }
 
 async function load() {
@@ -31,9 +34,14 @@ async function load() {
         //await plotPredictionHeatmap();
 
         $('#model-status').html(`Trained (saved ${modelInfo.dateSaved})`);
+        $('#prediction-output').html('');
         $('#load-button').prop('disabled', true);
         $('#test-button').removeAttr('disabled');
         $('#predict-button').removeAttr('disabled');
+
+        // change status of step trained
+        $('#trained-step').removeClass('disabled');
+        $('#trained-step').addClass('completed');
     }
     else {
         alert("Could not load: no saved model found");
@@ -45,8 +53,7 @@ async function predict() {
     //const predctionInput = parseInt($('#prediction-input').val());
     let inputs = [];
     headers.forEach(element => {
-        if(element !== label)
-        {
+        if (element !== label) {
             element = element.trimEnd();
             const predctionInput = parseInt($(`#${element}`).val());
             if (isNaN(predctionInput)) {
@@ -65,7 +72,7 @@ async function predict() {
             const normalizedOutputTensor = model.predict(normalizedInput.tensor);
             const outputTensor = denormalize(normalizedOutputTensor, normalizedLabel.min, normalizedLabel.max);
             const outputValue = outputTensor.dataSync()[0];
-            const outputValuePercent = (outputValue*100).toFixed(1);
+            const outputValuePercent = (outputValue * 100).toFixed(1);
             console.log(outputValuePercent);
             $('#prediction-output').html(`The likelihood of being a ${label} is ${outputValuePercent}%`);
         });
@@ -79,6 +86,9 @@ async function test() {
     $('#testing-status').html(
         `Testing set loss: ${loss/*.toPrecision(5)*/}`
     );
+    // change status of step tested
+    $('#tested-step').removeClass('disabled');
+    $('#tested-step').addClass('completed');
 }
 
 async function train() {
@@ -86,12 +96,14 @@ async function train() {
     $('#main').find(':button').prop('disabled', true);
     $('#model-status').html('Training...');
 
-    model = createModel();
+    const useDefault = $('#default').is(":checked");
+    const trainingSetSize = useDefault ? 0.8 : parseInt($('#training-size').val()) / 100;
+    model = createModel(useDefault);
     tfvis.show.modelSummary({ name: `Model Summary`/*, tab: `Model`*/ }, model);
     const layer = model.getLayer(undefined, 0);
     //tfvis.show.layer({ name: "Layer 1"/*, tab: `Model Inspection`*/ }, layer);
 
-    const result = await trainModel(model, trainingFeatureTensor, trainingLabelTensor);
+    const result = await trainModel(model, trainingFeatureTensor, trainingLabelTensor, useDefault);
     const trainingLoss = result.history.loss.pop();
     console.log(`Training set loss: ${trainingLoss}`);
 
@@ -104,11 +116,17 @@ async function train() {
         + `Training set loss: ${trainingLoss.toPrecision(5)}\n`
         + `Validation set loss: ${validationLoss.toPrecision(5)}`);
 
+    $('#prediction-output').html('');
+
     $('#train-button').removeAttr('disabled');
     $('#test-button').removeAttr('disabled');
     $('#load-button').removeAttr('disabled');
     $('#save-button').removeAttr('disabled');
     $('#predict-button').removeAttr('disabled');
+
+    // change status of step trained
+    $('#trained-step').removeClass('disabled');
+    $('#trained-step').addClass('completed');
 }
 
 async function toggleVisor() {
@@ -172,16 +190,46 @@ function denormalize(tensor, min, max) {
     }
 }
 
-function createModel() {
-    const learningRate = $('#learning-rate').val();
-    const optimizerFunc = $('#optimizer').val();
-    const lossMethod = $('#loss-method').val();
-    const numLayers = parseInt($('#layers').val());
+function toggleParams() {
+    $('#training-size').prop('disabled', function (i, v) { return !v; });
+    $('#validation-size').prop('disabled', function (i, v) { return !v; });
+    $('#epochs').prop('disabled', function (i, v) { return !v; });
+    $('#batch-size').prop('disabled', function (i, v) { return !v; });
+    $('#learning-rate').prop('disabled', function (i, v) { return !v; });
+    $('#optimizer').prop('disabled', function (i, v) { return !v; });
+    $('#loss-method').prop('disabled', function (i, v) { return !v; });
+    $('#layers').prop('disabled', function (i, v) { return !v; });
+}
 
-    console.log(`learning rate - ${learningRate} optimizer - ${optimizerFunc} loss method - ${lossMethod} layers - ${numLayers}`);
+function createModel(useDefault) {
+    const learningRate = useDefault ? 0.2 : $('#learning-rate').val();
+    const numLayers = useDefault ? 1 : parseInt($('#layers').val());
+    const optimizerFuncOption = $('#optimizer').val();
+    const lossMethodOption = $('#loss-method').val();
+
+    console.log(`learning rate - ${learningRate} optimizer - ${optimizerFuncOption} loss method - ${lossMethodOption} layers - ${numLayers}`);
+
+    let optimizerFunc;
+    let lossMethod;
+
+    // set optimizer
+    if (optimizerFuncOption === '0')
+        optimizerFunc = tf.train.sgd(learningRate);
+    else if (optimizerFuncOption === '1')
+        optimizerFunc = tf.train.adam(learningRate);
+
+    // set loss method
+    if (lossMethodOption === '0')
+        lossMethod = 'meanSquaredError';
+    else if (lossMethodOption === '1')
+        lossMethod = 'binaryCrossentropy';
+    else if (lossMethodOption === '2')
+        lossMethod = 'categoricalCrossentropy';
+
+    console.log(`optimizer - ${optimizerFunc} loss method - ${lossMethod}`);
 
     model = tf.sequential();
-    
+
     const activation = algorithm.includes('Linear') ? 'linear' : 'sigmoid';
 
     for (let index = 0; index < numLayers - 1; index++) {
@@ -202,27 +250,26 @@ function createModel() {
     }));
 
     // define optimizer
-    const optimizer = tf.train.adam(0.1);
+    const optimizer = useDefault ? tf.train.adam(0.1) : optimizerFunc;
 
     //compile the model
     model.compile({
-        loss: 'binaryCrossentropy',
+        loss: useDefault ? 'binaryCrossentropy' : lossMethod,
         optimizer,
-        //metrics: ['accuracy']
     });
 
     return model;
 }
 
-async function trainModel(model, trainingFeatureTensor, trainingLabelTensor) {
+async function trainModel(model, trainingFeatureTensor, trainingLabelTensor, useDefault) {
     const { onBatchEnd, onEpochEnd } = tfvis.show.fitCallbacks(
         { name: "Training Performance" },
         ['loss']
     );
 
-    const batchSize = parseInt($('#batch-size').val());
-    const epochs = parseInt($('#epochs').val());
-    const validationSetSize = parseInt($('#validation-size').val())/100;
+    const batchSize = useDefault ? 32 : parseInt($('#batch-size').val());
+    const epochs = useDefault ? 30 : parseInt($('#epochs').val());
+    const validationSetSize = useDefault ? 0.1 : parseInt($('#validation-size').val()) / 100;
 
     return model.fit(trainingFeatureTensor, trainingLabelTensor, {
         batchSize: batchSize,
@@ -242,103 +289,103 @@ async function trainModel(model, trainingFeatureTensor, trainingLabelTensor) {
     });
 }
 
-async function plotClasses (pointsArray, classKey, size = 400, equalizeClassSizes = false) {
+async function plotClasses(pointsArray, classKey, size = 400, equalizeClassSizes = false) {
     // Add each class as a series
     const allSeries = {};
     pointsArray.forEach(p => {
-      // Add each point to the series for the class it is in
-      const seriesName = `${classKey}: ${p.class}`;
-      let series = allSeries[seriesName];
-      if (!series) {
-        series = [];
-        allSeries[seriesName] = series;
-      }
-      series.push(p);
+        // Add each point to the series for the class it is in
+        const seriesName = `${classKey}: ${p.class}`;
+        let series = allSeries[seriesName];
+        if (!series) {
+            series = [];
+            allSeries[seriesName] = series;
+        }
+        series.push(p);
     });
-  
+
     if (equalizeClassSizes) {
-      // Find smallest class
-      let maxLength = null;
-      Object.values(allSeries).forEach(series => {
-        if (maxLength === null || series.length < maxLength && series.length >= 100) {
-          maxLength = series.length;
-        }
-      });
-      // Limit each class to number of elements of smallest class
-      Object.keys(allSeries).forEach(keyName => {
-        allSeries[keyName] = allSeries[keyName].slice(0, maxLength);
-        if (allSeries[keyName].length < 100) {
-          delete allSeries[keyName];
-        }
-      });
+        // Find smallest class
+        let maxLength = null;
+        Object.values(allSeries).forEach(series => {
+            if (maxLength === null || series.length < maxLength && series.length >= 100) {
+                maxLength = series.length;
+            }
+        });
+        // Limit each class to number of elements of smallest class
+        Object.keys(allSeries).forEach(keyName => {
+            allSeries[keyName] = allSeries[keyName].slice(0, maxLength);
+            if (allSeries[keyName].length < 100) {
+                delete allSeries[keyName];
+            }
+        });
     }
-  
+
     tfvis.render.scatterplot(
-      {
-        name: `Square feet vs House Price`,
-        styles: { width: "100%" }
-      },
-      {
-        values: Object.values(allSeries),
-        series: Object.keys(allSeries),
-      },
-      {
-        xLabel: "Square feet",
-        yLabel: "Price",
-        height: size,
-        width: size*1.5,
-      }
-    );
-  }
-
-  async function plotPredictionHeatmap (name = "Predicted class", size = 400) {
-    const [ valuesPromise, xTicksPromise, yTicksPromise ] = tf.tidy(() => {
-      const gridSize = 50;
-      const predictionColumns = [];
-      // Heatmap order is confusing: columns first (top to bottom) then rows (left to right)
-      // We want to convert that to a standard cartesian plot so invert the y values
-      for (let colIndex = 0; colIndex < gridSize; colIndex++) {
-        // Loop for each column, starting from the left
-        const colInputs = [];
-        const x = colIndex / gridSize;
-        for (let rowIndex = 0; rowIndex < gridSize; rowIndex++) {
-          // Loop for each row, starting from the top
-          const y = (gridSize - rowIndex) / gridSize;
-          colInputs.push([x, y]);
+        {
+            name: `Square feet vs House Price`,
+            styles: { width: "100%" }
+        },
+        {
+            values: Object.values(allSeries),
+            series: Object.keys(allSeries),
+        },
+        {
+            xLabel: "Square feet",
+            yLabel: "Price",
+            height: size,
+            width: size * 1.5,
         }
-        
-        const colPredictions = model.predict(tf.tensor2d(colInputs));
-        predictionColumns.push(colPredictions);
-      }
-      const valuesTensor = tf.stack(predictionColumns);
+    );
+}
 
-      const normalizedLabelsTensor = tf.linspace(0, 1, gridSize);
-      const xTicksTensor = denormalize(normalizedLabelsTensor,
-        normalizedFeature.min[0], normalizedFeature.max[0]);
-      const yTicksTensor = denormalize(normalizedLabelsTensor.reverse(),
-        normalizedFeature.min[1], normalizedFeature.max[1]);
+async function plotPredictionHeatmap(name = "Predicted class", size = 400) {
+    const [valuesPromise, xTicksPromise, yTicksPromise] = tf.tidy(() => {
+        const gridSize = 50;
+        const predictionColumns = [];
+        // Heatmap order is confusing: columns first (top to bottom) then rows (left to right)
+        // We want to convert that to a standard cartesian plot so invert the y values
+        for (let colIndex = 0; colIndex < gridSize; colIndex++) {
+            // Loop for each column, starting from the left
+            const colInputs = [];
+            const x = colIndex / gridSize;
+            for (let rowIndex = 0; rowIndex < gridSize; rowIndex++) {
+                // Loop for each row, starting from the top
+                const y = (gridSize - rowIndex) / gridSize;
+                colInputs.push([x, y]);
+            }
 
-      return [ valuesTensor.array(), xTicksTensor.array(), yTicksTensor.array() ];
+            const colPredictions = model.predict(tf.tensor2d(colInputs));
+            predictionColumns.push(colPredictions);
+        }
+        const valuesTensor = tf.stack(predictionColumns);
+
+        const normalizedLabelsTensor = tf.linspace(0, 1, gridSize);
+        const xTicksTensor = denormalize(normalizedLabelsTensor,
+            normalizedFeature.min[0], normalizedFeature.max[0]);
+        const yTicksTensor = denormalize(normalizedLabelsTensor.reverse(),
+            normalizedFeature.min[1], normalizedFeature.max[1]);
+
+        return [valuesTensor.array(), xTicksTensor.array(), yTicksTensor.array()];
     });
 
     const values = await valuesPromise;
     const xTicks = await xTicksPromise;
-    const xTickLabels = xTicks.map(l => (l/1000).toFixed(1)+"k sqft");
+    const xTickLabels = xTicks.map(l => (l / 1000).toFixed(1) + "k sqft");
     const yTicks = await yTicksPromise;
-    const yTickLabels = yTicks.map(l => "$"+(l/1000).toFixed(0)+"k");
+    const yTickLabels = yTicks.map(l => "$" + (l / 1000).toFixed(0) + "k");
     const data = {
-      values,
-      xTickLabels,
-      yTickLabels,
+        values,
+        xTickLabels,
+        yTickLabels,
     };
 
     tfvis.render.heatmap({
-      name: `${name} (local)`,
-      tab: "Predictions"
+        name: `${name} (local)`,
+        tab: "Predictions"
     }, data, { height: size });
-    tfvis.render.heatmap({ 
-      name: `${name} (full domain)`, 
-      tab: "Predictions" 
+    tfvis.render.heatmap({
+        name: `${name} (full domain)`,
+        tab: "Predictions"
     }, data, { height: size, domain: [0, 1] });
 }
 
@@ -409,12 +456,15 @@ async function run() {
     // trainingFeatureTensor.print();
 
     // Add controls for features
-    headers.forEach(element => {
-        if(element !== label){
-            element = element.trimEnd();
-            $('#features').append(`<label>${element.toUpperCase()}: <input type="number" id="${element}"/></label>`);
-        }
-      });
+    featureNames.forEach(element => {
+        element = element.trimEnd();
+        //featureNames.push(element);
+        // $('#features').append(`<label>${element.toUpperCase()}: <input type="number" id="${element}"/></label>`);
+        $('#features').append(`<div class="field">
+            <label>${element.toUpperCase()}:</label>
+            <input type="number" id="${element}">
+            </div>`);
+    });
 
     // Update status and enable train button
     $('#model-status').html("Model not trained");
