@@ -10,17 +10,18 @@ const csvUrl = $('#input').val();
 const algorithm = $('#algorithm').val();
 const label = $('#label').val();
 const storageId = $('#modelId').val();
-//const storageKey = `localstorage://${storageId}`;
 
 //const storageKey = `http://localhost:3001/upload`;
-const storageKey = `downloads://${storageId}`;
+const storageKeyLocal = `localstorage://${storageId}`;
+const storageKeyDownload = `downloads://${storageId}`;
 
 run();
 
 async function save() {
-    const savedResults = await model.save(storageKey);
-
-    $('#model-status').html(`Trained (saved model ${storageId} - ${savedResults.modelArtifactsInfo.dateSaved})`);
+    const savedResults1 = await model.save(storageKeyDownload);
+    console.log(`downloaded model ${storageId} - ${savedResults1.modelArtifactsInfo.dateSaved})`)
+    const savedResults2 = await model.save(storageKeyLocal);
+    $('#model-status').html(`Trained (saved model ${storageId} - ${savedResults2.modelArtifactsInfo.dateSaved})`);
     $('#save-button').prop('disabled', true);
     // change status of step saved
     $('#saved-step').removeClass('disabled');
@@ -29,9 +30,9 @@ async function save() {
 
 async function load() {
     const models = await tf.io.listModels();
-    const modelInfo = models[storageKey];
+    const modelInfo = models[storageKeyLocal];
     if (modelInfo) {
-        model = await tf.loadLayersModel(storageKey);
+        model = await tf.loadLayersModel(storageKeyLocal);
         tfvis.show.modelSummary({ name: `Model Summary`/*, tab: `Model`*/ }, model);
 
         if (numOfFeatures === 1)
