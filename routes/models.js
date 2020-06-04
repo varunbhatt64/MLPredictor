@@ -1,9 +1,18 @@
 const express = require('express');
 const Model = require('../models/model');
 const Algorithm = require("../models/algorithm.js");
+//const tf = require("@tensorflow/tfjs");
 const tf = require('@tensorflow/tfjs-node');
 
 let router = express.Router();
+
+///////////////////////
+let headers;
+let featureNames;
+let points;
+let numOfFeatures;
+let normalizedFeature, normalizedLabel;
+///////////////////////
 
 // Index - GET
 router.get("/models", function (req, res) {
@@ -77,26 +86,53 @@ router.post("/models", function (req, res) {
 //Load data - Post
 router.post("/models/:id", function (req, res) {
     console.log(req.body);
-    // const csvDataset = tf.data.csv(
-    //     req.body.url, {
-    //     columnConfigs: {
-    //         price: {
-    //             isLabel: true
-    //         }
-    //     }
-    // });
-    //let columnNames = await csvDataset.take(10).toArray();
-    //console.log(columnNames);
-    //await run(req.body.url, 'price');
+});
 
-    // const points = csvDataset.map(record => ({
-    //     x: record.sqft_living15,
-    //     y: record.price
-    // }));
-    //const pointsArr = await points.toArray();
-    //console.log(pointsArr);
-    //tfvs.render.table
-    //res.render('vis');
+router.get("/models/:id/predict", async function (req, res) {
+    Model.findById(req.params.id).populate('algorithm').exec(async function (err, foundModel) {
+        if (err){
+            console.log('model not found');
+            res.status(404).json({
+                message: "Model not found",
+                err
+            });
+        }
+        else {
+            const handler = tf.io.fileSystem(`C://Users/varun/Downloads/${req.params.id}.json`);
+            const model = await tf.loadLayersModel(handler);
+            await run(foundModel.inputPath, foundModel.label);
+            let inputs = [];
+            console.log(featureNames);
+            console.log(req.query);
+            featureNames.forEach(element => {
+                element = element.trimEnd();
+                const predctionInput = parseInt(req.query[element]);
+                if (isNaN(predctionInput)) {
+                    res.status(400).json({
+                        message: "Invalid parameter"                        
+                    });
+                }
+                inputs.push(predctionInput);
+            });
+            const inputTensor = tf.tensor2d([inputs]);
+            const normalizedInput = normalize(inputTensor, normalizedFeature.min, normalizedFeature.max);
+            const normalizedOutputTensor = model.predict(normalizedInput.tensor);
+            const outputTensor = denormalize(normalizedOutputTensor, normalizedLabel.min, normalizedLabel.max);
+            const outputValue = outputTensor.dataSync()[0];
+            const outputRoundedValue = outputValue.toFixed(2);
+            console.log(`predicted value - ${outputRoundedValue}`);
+            try {
+                res.status(200).json({
+                    data: outputRoundedValue
+                });
+            } catch (err) {
+                res.status(400).json({
+                    message: "Some error occured",
+                    err
+                });
+            }
+        }
+    });
 });
 
 //EDIT  Route - GET
@@ -137,53 +173,61 @@ router.delete("/models/:id", function (req, res) {
     });
 });
 
-function normalize(tensor) {
-    const min = tensor.min();
-    const max = tensor.max();
-    const normalizedTensor = tensor.sub(min).div(max.sub(min));
-    return {
-        tensor: normalizedTensor,
-        min: min,
-        max: max
-    };
+function normalize(tensor, previousMin = null, previousMax = null) {
+    const tensorDimention = tensor.shape.length > 1 && tensor.shape[1];
+
+    if (tensorDimention && tensorDimention > 1) {
+        // more than 1 feature
+        // split into separate tensors
+        const features = tf.split(tensor, tensorDimention, 1);
+
+        // normalize and find min/max for each feature
+        const normalizedFeatures = features.map((featureTensor, i) =>
+            normalize(featureTensor,
+                previousMin ? previousMin[i] : null,
+                previousMax ? previousMax[i] : null
+            )
+        );
+
+        // now again concat the separate feature tensors to return
+        const returnTensor = tf.concat(normalizedFeatures.map(f => f.tensor), 1);
+        const min = normalizedFeatures.map(f => f.min);
+        const max = normalizedFeatures.map(f => f.max);
+
+        return { tensor: returnTensor, min, max };
+    }
+    else {
+        const min = previousMin || tensor.min();
+        const max = previousMax || tensor.max();
+        const normalizedTensor = tensor.sub(min).div(max.sub(min));
+        return {
+            tensor: normalizedTensor,
+            min: min,
+            max: max
+        };
+    }
 }
 
 function denormalize(tensor, min, max) {
-    const denormalizedTensor = tensor.mul(max.sub(min)).add(min);
-    return denormalizedTensor;
-}
+    const tensorDimention = tensor.shape.length > 1 && tensor.shape[1];
 
-function createModel() {
-    const model = tf.sequential();
-    model.add(tf.layers.dense({
-        units: 1,
-        useBias: true,
-        activation: 'linear',
-        inputDim: 1,
-    }));
-    // define optimizer
-    const optimizer = tf.train.sgd(0.1);
+    if (tensorDimention && tensorDimention > 1) {
+        // more than 1 feature
+        // split into separate tensors
+        const features = tf.split(tensor, tensorDimention, 1);
 
-    //compile the model
-    model.compile({
-        loss: 'meanSquaredError',
-        optimizer,
-    });
+        const denormalized = features.map((featureTensor, i) =>
+            denormalize(featureTensor, min[i], max[i])
+        );
 
-    return model;
-}
+        const returnTensor = tf.concat(denormalized, 1);
+        return returnTensor;
+    }
 
-async function trainModel(model, trainingFeatureTensor, trainingLabelTensor) {
-    return model.fit(trainingFeatureTensor, trainingLabelTensor, {
-        batchSize: 32,
-        epochs: 20,
-        validationSplit: 0.2,
-        callbacks: {
-            onEpochEnd: async (epoch, log) => {
-                console.log(`epoch ${epoch}: loss = ${log.loss}`);
-            }
-        }
-    });
+    else {
+        const denormalizedTensor = tensor.mul(max.sub(min)).add(min);
+        return denormalizedTensor;
+    }
 }
 
 async function run(csvUrl, label) {
@@ -191,23 +235,28 @@ async function run(csvUrl, label) {
     const csvDataset = tf.data.csv(
         csvUrl, {
         columnConfigs: {
-            price: {
+            [label]: {
                 isLabel: true
             }
         }
     });
     //console.log(await csvDataset.take(1).toArray());
 
+    headers = await csvDataset.columnNames();
+    featureNames = headers.filter(value => value !== label);
+    console.log(`headers - ${headers} features - ${featureNames}`);
+    numOfFeatures = featureNames.length;
+
     //extract feature and label
     const pointsDataset = csvDataset.map(({ xs, ys }) => {
         return {
-            x: xs.sqft_living,
-            y: ys.price
+            x: Object.values(xs),
+            y: Object.values(ys)
         }
-    });
+    }).take(1000);
     //console.log(await pointsDataset.toArray());
 
-    const points = await pointsDataset.toArray();
+    points = await pointsDataset.toArray();
     //if number of elements is odd then remove the last element to make split work
     if (points.length % 2 !== 0) {
         points.pop();
@@ -217,43 +266,18 @@ async function run(csvUrl, label) {
 
     // extract Features (inputs)
     const featureValues = points.map(p => p.x);
-    const featureTensor = tf.tensor2d(featureValues, [featureValues.length, 1]);
+    const featureTensor = tf.tensor2d(featureValues);
 
     // extract Labels (outputs)
-    const labelValues = points.map(p => p.x);
+    const labelValues = points.map(p => p.y);
     const labelTensor = tf.tensor2d(labelValues, [labelValues.length, 1]);
 
-    //featureTensor.print();
-    //labelTensor.print();
-
     // normalize using min-max
-    const normalizedFeature = normalize(featureTensor);
-    const normalizedLabel = normalize(labelTensor);
+    normalizedFeature = normalize(featureTensor);
+    normalizedLabel = normalize(labelTensor);
 
-    //normalizedFeature.tensor.print();
-    //normalizedLabel.tensor.print();
-
-    //denormalize(normalizedFeature.tensor, normalizedFeature.min, normalizedFeature.max).print();
-
-    // split dataset into testing and training - split doesn't work if number of elements are odd
-    const [trainingFeatureTensor, testingFeatureTensor] = tf.split(normalizedFeature.tensor, 2);
-    const [trainingLabelTensor, testingLabelTensor] = tf.split(normalizedLabel.tensor, 2);
-
-    //trainingFeatureTensor.print();
-
-    const model = createModel();
-    //const layer = model.getLayer(undefined, 0);
-    //model.summary();
-    const result = await trainModel(model, trainingFeatureTensor, trainingLabelTensor);
-    const trainingLoss = result.history.loss.pop();
-    console.log(`Training set loss: ${trainingLoss}`);
-
-    const validationLoss = result.history.val_loss.pop();
-    console.log(`Validation set loss: ${validationLoss}`);
-
-    const lossTensor = model.evaluate(testingFeatureTensor, testingLabelTensor);
-    const loss = await lossTensor.dataSync();
-    console.log(`Testing set loss: ${loss}`);
+    featureTensor.dispose();
+    labelTensor.dispose();   
 }
 
 module.exports = router;

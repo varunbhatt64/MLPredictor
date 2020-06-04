@@ -10,14 +10,15 @@ const csvUrl = $('#input').val();
 const algorithm = $('#algorithm').val();
 const label = $('#label').val();
 const storageId = $('#modelId').val();
-const storageKey = `localstorage://${storageId}`;
+//const storageKey = `localstorage://${storageId}`;
+const storageKey = `downloads://${storageId}`;
 
 run();
 
 async function save() {
     const savedResults = await model.save(storageKey);
 
-    $('#model-status').html(`Trained (saved ${savedResults.modelArtifactsInfo.dateSaved})`);
+    $('#model-status').html(`Trained (saved model ${storageId} - ${savedResults.modelArtifactsInfo.dateSaved})`);
     $('#save-button').prop('disabled', true);
     // change status of step saved
     $('#saved-step').removeClass('disabled');
@@ -52,17 +53,15 @@ async function load() {
 async function predict() {
     //const predctionInput = parseInt($('#prediction-input').val());
     let inputs = [];
-    headers.forEach(element => {
-        if (element !== label) {
-            element = element.trimEnd();
-            const predctionInput = parseInt($(`#${element}`).val());
-            if (isNaN(predctionInput)) {
-                alert(`Please enter a valid number for ${element}`);
-                return;
-            }
-            else
-                inputs.push(predctionInput);
+    featureNames.forEach(element => {
+        element = element.trimEnd();
+        const predctionInput = parseInt($(`#${element}`).val());
+        if (isNaN(predctionInput)) {
+            alert(`Please enter a valid number for ${element}`);
+            return;
         }
+        else
+            inputs.push(predctionInput);
     });
     console.log(`Inputs - ${inputs}`);
     if (inputs.length === numOfFeatures) {
@@ -74,7 +73,7 @@ async function predict() {
             const outputValue = outputTensor.dataSync()[0];
             const outputValuePercent = (outputValue * 100).toFixed(1);
             console.log(outputValuePercent);
-            $('#prediction-output').html(`The likelihood of being a ${label} is ${outputValuePercent}%`);
+            $('#prediction-output').html(`The likelihood of being a <span style="font-size: 1.2em">${label} is ${outputValuePercent}%</span>`);
         });
     }
 }
@@ -268,7 +267,7 @@ async function trainModel(model, trainingFeatureTensor, trainingLabelTensor, use
     );
 
     const batchSize = useDefault ? 32 : parseInt($('#batch-size').val());
-    const epochs = useDefault ? 30 : parseInt($('#epochs').val());
+    const epochs = useDefault ? 20 : parseInt($('#epochs').val());
     const validationSetSize = useDefault ? 0.1 : parseInt($('#validation-size').val()) / 100;
 
     return model.fit(trainingFeatureTensor, trainingLabelTensor, {
