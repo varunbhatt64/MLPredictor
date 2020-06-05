@@ -18,14 +18,18 @@ const storageKeyDownload = `downloads://${storageId}`;
 run();
 
 async function save() {
-    const savedResults1 = await model.save(storageKeyDownload);
-    console.log(`downloaded model ${storageId} - ${savedResults1.modelArtifactsInfo.dateSaved})`)
-    const savedResults2 = await model.save(storageKeyLocal);
-    $('#model-status').html(`Trained (saved model ${storageId} - ${savedResults2.modelArtifactsInfo.dateSaved})`);
+    const savedResults = await model.save(storageKeyLocal);
+    $('#model-status').html(`Trained (saved model ${storageId} - ${savedResults.modelArtifactsInfo.dateSaved})`);
     $('#save-button').prop('disabled', true);
     // change status of step saved
     $('#saved-step').removeClass('disabled');
     $('#saved-step').addClass('completed');
+}
+
+async function download() {
+    const savedResults = await model.save(storageKeyDownload);
+    $('#model-status').html(`Trained (downloaded model ${storageId} - ${savedResults.modelArtifactsInfo.dateSaved})`);
+    $('#download-button').prop('disabled', true);
 }
 
 async function load() {
@@ -43,6 +47,7 @@ async function load() {
         $('#load-button').prop('disabled', true);
         $('#test-button').removeAttr('disabled');
         $('#predict-button').removeAttr('disabled');
+        $('#download-button').removeAttr('disabled');
 
         // change status of step trained
         $('#trained-step').removeClass('disabled');
@@ -125,6 +130,7 @@ async function train() {
     $('#test-button').removeAttr('disabled');
     $('#load-button').removeAttr('disabled');
     $('#save-button').removeAttr('disabled');
+    $('#download-button').removeAttr('disabled');
     $('#predict-button').removeAttr('disabled');
 
     // change status of step trained
@@ -234,6 +240,7 @@ function createModel(useDefault) {
     model = tf.sequential();
 
     const activation = algorithm.includes('Linear') ? 'linear' : 'sigmoid';
+    console.log(activation);
 
     for (let index = 0; index < numLayers - 1; index++) {
         model.add(tf.layers.dense({
@@ -370,6 +377,7 @@ async function run() {
     tf.util.shuffle(points);
 
     plot(points, featureNames[0], label);
+    tfvis.visor().close();
 
     // extract Features (inputs)
     const featureValues = points.map(p => p.x);
