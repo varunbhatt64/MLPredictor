@@ -1,7 +1,7 @@
 <%- include ("partials/header.ejs") %>
 <div class="ui main text container segment">
-    <div class="ui huge header">Create New Model</div>
-    <form class="ui form" action="/models" method="POST">
+    <div class="ui blue huge header">Create New Model</div>
+    <form class="ui form segment" action="/models" method="POST">
         <div class="field">
             <label>Name</label>
             <input type="text" name="model[name]" placeholder="name">
@@ -25,6 +25,12 @@
         <div class="field">
             <label>Desription</label>
             <textarea name="model[description]" placeholder="description"></textarea>
+        </div>
+        <div class="field">
+            <div class="ui checkbox">
+                <input type="checkbox" id="default" name="model[isTrained]" value=true>
+                <label>Pre-trained</label>
+            </div>
         </div>
 
         <input class="ui violet basic button" type="submit" value="Create">
