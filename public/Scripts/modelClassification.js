@@ -295,7 +295,7 @@ async function trainModel(model, trainingFeatureTensor, trainingLabelTensor, use
     });
 }
 
-async function plotClasses(pointsArray, classKey, size = 400, equalizeClassSizes = false) {
+async function plotClasses(pointsArray, featureName1, featureName2, classKey) {
     // Add each class as a series
     const allSeries = {};
     pointsArray.forEach(p => {
@@ -309,26 +309,9 @@ async function plotClasses(pointsArray, classKey, size = 400, equalizeClassSizes
         series.push(p);
     });
 
-    if (equalizeClassSizes) {
-        // Find smallest class
-        let maxLength = null;
-        Object.values(allSeries).forEach(series => {
-            if (maxLength === null || series.length < maxLength && series.length >= 100) {
-                maxLength = series.length;
-            }
-        });
-        // Limit each class to number of elements of smallest class
-        Object.keys(allSeries).forEach(keyName => {
-            allSeries[keyName] = allSeries[keyName].slice(0, maxLength);
-            if (allSeries[keyName].length < 100) {
-                delete allSeries[keyName];
-            }
-        });
-    }
-
     tfvis.render.scatterplot(
         {
-            name: `Square feet vs House Price`,
+            name: `${featureName1} vs ${featureName2}`,
             styles: { width: "100%" }
         },
         {
@@ -336,10 +319,8 @@ async function plotClasses(pointsArray, classKey, size = 400, equalizeClassSizes
             series: Object.keys(allSeries),
         },
         {
-            xLabel: "Square feet",
-            yLabel: "Price",
-            height: size,
-            width: size * 1.5,
+            xLabel: featureName1,
+            yLabel: featureName2,
         }
     );
 }
@@ -429,7 +410,28 @@ async function run() {
     // shuffle the data
     tf.util.shuffle(points);
 
-    //plot(points, "Square Feet", label);
+    if (numOfFeatures == 1) {
+        const pointsDatasetPlot = csvDataset.map(({ xs, ys }) => {
+            return {
+                x: Object.values(xs)[0],
+                y: Object.values(xs)[0],
+                class: Object.values(ys)
+            }
+        });
+        let pointsPlot = await pointsDatasetPlot.toArray();
+        plotClasses(pointsPlot, featureNames[0], featureNames[0], label);
+    }
+    else {
+        const pointsDatasetPlot = csvDataset.map(({ xs, ys }) => {
+            return {
+                x: Object.values(xs)[0],
+                y: Object.values(xs)[1],
+                class: Object.values(ys)
+            }
+        });
+        let pointsPlot = await pointsDatasetPlot.toArray();
+        plotClasses(pointsPlot, featureNames[0], featureNames[1], label);
+    }
 
     // extract Features (inputs)
     const featureValues = points.map(p => p.x);
